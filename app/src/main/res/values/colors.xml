@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="black">#FF000000</color>
+    <color name="white">#FFFFFFFF</color>
+    
+    <!-- Colores principales de la app -->
+    <color name="purple_500">#6200EE</color>
+    <color name="purple_700">#3700B3</color>
+    
+    <!-- Colores de YAPE (para uso futuro) -->
+    <color name="yape_purple">#722C8D</color>
+    <color name="yape_green">#00D673</color>
+</resources>
