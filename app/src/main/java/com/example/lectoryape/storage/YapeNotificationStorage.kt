@@ -36,7 +36,7 @@ class YapeNotificationStorage(private val context: Context) {
                 writer.append("\n")
             }
             
-            Log.d(TAG, "✅ Notificación guardada: ${notification.title}")
+            Log.d(TAG, "✅ Notificación guardada: ${notification.name}")
             true
         } catch (e: IOException) {
             Log.e(TAG, "❌ Error al guardar notificación: ${e.message}", e)

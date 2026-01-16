@@ -4,16 +4,16 @@ package com.example.lectoryape.models
  * Representa una notificación de Yape capturada en su formato crudo (sin parsear)
  * 
  * @property timestamp Momento en que se recibió la notificación (epoch millis)
- * @property title Título de la notificación (ej: "Confirmación de Pago")
- * @property text Texto principal de la notificación
- * @property bigText Texto expandido (usualmente igual que text)
+ * @property name El nombre del emisor del pago
+ * @property amount Monto de la operación
+ * @property securityCode Representa el codigo de seguridad entre operaciones de yape a yape
  * @property notificationId ID único de la notificación en el sistema
  */
 data class YapeNotificationRaw(
+    val name: String,
+    val amount: Double,
     val timestamp: Long,
-    val title: String,
-    val text: String,
-    val bigText: String,
+    val securityCode: String,
     val notificationId: Int
 ) {
     /**
@@ -24,11 +24,11 @@ data class YapeNotificationRaw(
         return buildString {
             append(timestamp)
             append(",")
-            append(escapeCsv(title))
+            append(escapeCsv(name))
             append(",")
-            append(escapeCsv(text))
+            append(escapeCsv(amount.toString()))
             append(",")
-            append(escapeCsv(bigText))
+            append(escapeCsv(securityCode))
             append(",")
             append(notificationId)
         }
@@ -47,6 +47,6 @@ data class YapeNotificationRaw(
         /**
          * Encabezado del archivo CSV
          */
-        const val CSV_HEADER = "timestamp,title,text,bigText,notificationId"
+        const val CSV_HEADER = "timestamp,name,amount,securityCode,notificationId"
     }
 }
