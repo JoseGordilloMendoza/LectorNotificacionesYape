@@ -6,19 +6,19 @@ import android.service.notification.StatusBarNotification
 import android.util.Log
 import com.example.lectoryape.models.YapeNotificationRaw
 import com.example.lectoryape.storage.YapeNotificationStorage
+import com.example.lectoryape.utils.YapeParser
 
 class YapeNotificationListenerService : NotificationListenerService() {
-    
-    private lateinit var storage: YapeNotificationStorage
+    // se usa para seguridad con posibles problemas de arranque
+    private val storage by lazy { YapeNotificationStorage(applicationContext) }
     
     companion object {
         private const val TAG = "YapeNotificationListener"
-        
         // debuggeo xd
         private const val DEBUG_MODE = false
         
         // pakeich de yape xd
-        private const val YAPE_PACKAGE = "com.bcp.innovacxion.yapeapp"
+        private const val YAPE_PACKAGE = "com.bcp.innovabcp.yapeapp"
         
         // Acción del broadcast para notificar a MainActivity
         const val ACTION_NOTIFICATION_SAVED = "com.example.lectoryape.NOTIFICATION_SAVED"
@@ -71,44 +71,47 @@ class YapeNotificationListenerService : NotificationListenerService() {
      * Procesa notificaciones específicas de Yape
      */
     private fun processYapeNotification(sbn: StatusBarNotification) {
-        val extras = sbn.notification.extras
-        val title = extras.getString("android.title") ?: ""
-        val text = extras.getString("android.text") ?: ""
-        val bigText = extras.getCharSequence("android.bigText")?.toString() ?: ""
-        
-        Log.w(TAG, "🟢 ═══ NOTIFICACIÓN DE YAPE DETECTADA ═══")
-        Log.w(TAG, "🟢 Timestamp: ${sbn.postTime}")
-        Log.w(TAG, "🟢 Título: $title")
-        Log.w(TAG, "🟢 Texto: $text")
-        Log.w(TAG, "🟢 BigText: $bigText")
-        Log.w(TAG, "🟢 ════════════════════════════════════════")
-        
-        // Crear objeto de notificación cruda
-        val notification = YapeNotificationRaw(
-            timestamp = sbn.postTime,
-            title = title,
-            text = text,
-            bigText = bigText,
-            notificationId = sbn.id
-        )
-        
-        // Guardar en CSV
-        val saved = storage.saveNotification(notification)
+        // usamos el parser
+        val yapePayment = YapeParser.parse(sbn)
+
+        if (yapePayment == null) {
+            Log.w(TAG, "Notificación de Yape recibida pero no es un pago válido o formato desconocido")
+            return
+        }
+
+        // log estructurado del pago ya procesado
+        logYapePayment(yapePayment)
+
+        // persistencia
+        val saved = storage.saveNotification(yapePayment)
+
         if (saved) {
-            Log.i(TAG, "💾 Notificación guardada exitosamente. Total: ${storage.getNotificationCount()}")
-            
-            // Enviar broadcast para notificar a MainActivity
+            Log.i(TAG, "Pago de ${yapePayment.name} guardado. Total: ${storage.getNotificationCount()}")
             sendBroadcast(Intent(ACTION_NOTIFICATION_SAVED))
         } else {
-            Log.e(TAG, "❌ Error al guardar notificación")
+            Log.e(TAG, "Error al guardar en CSV")
         }
-        
-        // TODO: Aquí aplicaremos el regex para extraer datos estructurados
     }
-    
+
+    private fun logYapePayment(payment: YapeNotificationRaw) {
+        Log.d(TAG, """
+        🟢 ═══ PAGO RECIBIDO ═══
+        👤 Cliente: ${payment.name}
+        💰 Monto:   S/ ${"%.2f".format(payment.amount)}
+        🔑 Código:  ${payment.securityCode}
+        ⏰ Time:    ${payment.timestamp}
+        ════════════════════════
+    """.trimIndent())
+    }
+
+    // para debugging
+    private fun logRawDetails(sbn: StatusBarNotification) {
+        val extras = sbn.notification.extras
+        Log.v(TAG, "Raw Text: ${extras.getString("android.text")}")
+    }
+
     override fun onListenerConnected() {
         super.onListenerConnected()
-        storage = YapeNotificationStorage(applicationContext)
         Log.d(TAG, "Servicio de notificaciones CONECTADO")
         Log.d(TAG, "📂 Archivo CSV: ${storage.getFilePath()}")
     }
