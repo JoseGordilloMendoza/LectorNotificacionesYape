@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<paths>
+    <!-- Permite compartir archivos del directorio de archivos externos de la app -->
+    <external-files-path 
+        name="yape_files" 
+        path="." />
+</paths>

@@ -1,38 +1,206 @@
 package com.example.lectoryape
 
-import android.content.ComponentName
+import android.content.BroadcastReceiver
+import android.content.Context
 import android.content.Intent
+import android.content.IntentFilter
+import android.net.Uri
 import android.os.Bundle
 import android.provider.Settings
 import android.widget.Toast
+import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
+import androidx.core.content.FileProvider
 import androidx.core.view.isVisible
 import com.example.lectoryape.databinding.ActivityMainBinding
+import com.example.lectoryape.service.YapeNotificationListenerService
+import com.example.lectoryape.storage.YapeNotificationStorage
+import java.io.File
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 class MainActivity : AppCompatActivity() {
     
     private lateinit var binding: ActivityMainBinding
+    private lateinit var storage: YapeNotificationStorage
+    
+    // BroadcastReceiver para escuchar cuando se guardan notificaciones
+    private val notificationReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context?, intent: Intent?) {
+            if (intent?.action == YapeNotificationListenerService.ACTION_NOTIFICATION_SAVED) {
+                // Actualizar UI en tiempo real
+                updateNotificationCount()
+                Toast.makeText(this@MainActivity, "📱 Nueva notificación guardada", Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
     
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
         
+        storage = YapeNotificationStorage(this)
+        
         setupUI()
         checkNotificationPermission()
+        updateNotificationCount()
     }
     
     override fun onResume() {
         super.onResume()
+        // Registrar el receiver para escuchar broadcasts
+        val filter = IntentFilter(YapeNotificationListenerService.ACTION_NOTIFICATION_SAVED)
+        registerReceiver(notificationReceiver, filter, RECEIVER_NOT_EXPORTED)
+        
         // Verificar permiso cada vez que la app regresa al foreground
         checkNotificationPermission()
+        updateNotificationCount()
+    }
+    
+    override fun onPause() {
+        super.onPause()
+        // Desregistrar el receiver para evitar memory leaks
+        try {
+            unregisterReceiver(notificationReceiver)
+        } catch (e: IllegalArgumentException) {
+            // Receiver no estaba registrado, ignorar
+        }
     }
     
     private fun setupUI() {
         // Botón para abrir configuración de notificaciones
         binding.btnEnableNotifications.setOnClickListener {
             openNotificationSettings()
+        }
+        
+        // Botón para exportar CSV
+        binding.btnExportCsv.setOnClickListener {
+            exportCsv()
+        }
+        
+        // Botón para ver CSV
+        binding.btnViewCsv.setOnClickListener {
+            viewCsv()
+        }
+        
+        // Botón para limpiar datos
+        binding.btnClearData.setOnClickListener {
+            confirmClearData()
+        }
+    }
+    
+    /**
+     * Actualiza el contador de notificaciones en la UI
+     */
+    private fun updateNotificationCount() {
+        val count = storage.getNotificationCount()
+        binding.tvTransactionCount.text = count.toString()
+        
+        // Mostrar/ocultar botones según haya datos
+        val hasData = count > 0
+        binding.btnExportCsv.isEnabled = hasData
+        binding.btnViewCsv.isEnabled = hasData
+        binding.btnClearData.isEnabled = hasData
+        
+        if (!hasData) {
+            binding.btnExportCsv.alpha = 0.5f
+            binding.btnViewCsv.alpha = 0.5f
+            binding.btnClearData.alpha = 0.5f
+        } else {
+            binding.btnExportCsv.alpha = 1.0f
+            binding.btnViewCsv.alpha = 1.0f
+            binding.btnClearData.alpha = 1.0f
+        }
+    }
+    
+    /**
+     * Exporta el CSV usando el diálogo de compartir de Android
+     */
+    private fun exportCsv() {
+        if (!storage.fileExists()) {
+            Toast.makeText(this, "No hay datos para exportar", Toast.LENGTH_SHORT).show()
+            return
+        }
+        
+        try {
+            val csvFile = File(storage.getFilePath())
+            val uri: Uri = FileProvider.getUriForFile(
+                this,
+                "${packageName}.fileprovider",
+                csvFile
+            )
+            
+            val shareIntent = Intent(Intent.ACTION_SEND).apply {
+                type = "text/csv"
+                putExtra(Intent.EXTRA_STREAM, uri)
+                putExtra(Intent.EXTRA_SUBJECT, "Notificaciones de Yape")
+                putExtra(Intent.EXTRA_TEXT, "Archivo CSV con ${storage.getNotificationCount()} notificaciones de Yape")
+                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            }
+            
+            startActivity(Intent.createChooser(shareIntent, "Exportar CSV"))
+            
+        } catch (e: Exception) {
+            Toast.makeText(this, "Error al exportar: ${e.message}", Toast.LENGTH_SHORT).show()
+        }
+    }
+    
+    /**
+     * Muestra el contenido del CSV en un diálogo
+     */
+    private fun viewCsv() {
+        if (!storage.fileExists()) {
+            Toast.makeText(this, "No hay datos para ver", Toast.LENGTH_SHORT).show()
+            return
+        }
+        
+        val content = storage.getAllNotificationsAsText()
+        val lines = content.lines()
+        
+        // Mostrar solo las primeras líneas para no saturar la UI
+        val preview = if (lines.size > 20) {
+            lines.take(20).joinToString("\n") + "\n\n... (${lines.size - 20} líneas más)"
+        } else {
+            content
+        }
+        
+        AlertDialog.Builder(this)
+            .setTitle("📄 Contenido del CSV (${storage.getNotificationCount()} notificaciones)")
+            .setMessage(preview)
+            .setPositiveButton("Cerrar", null)
+            .setNeutralButton("Exportar") { _, _ ->
+                exportCsv()
+            }
+            .show()
+    }
+    
+    /**
+     * Confirma antes de limpiar todos los datos
+     */
+    private fun confirmClearData() {
+        AlertDialog.Builder(this)
+            .setTitle("⚠️ Confirmar")
+            .setMessage("¿Estás seguro de eliminar todas las ${storage.getNotificationCount()} notificaciones guardadas?\n\nEsta acción no se puede deshacer.")
+            .setPositiveButton("Eliminar") { _, _ ->
+                clearData()
+            }
+            .setNegativeButton("Cancelar", null)
+            .show()
+    }
+    
+    /**
+     * Elimina todos los datos
+     */
+    private fun clearData() {
+        val success = storage.clearAll()
+        if (success) {
+            Toast.makeText(this, "✅ Datos eliminados", Toast.LENGTH_SHORT).show()
+            updateNotificationCount()
+        } else {
+            Toast.makeText(this, "❌ Error al eliminar datos", Toast.LENGTH_SHORT).show()
         }
     }
     
