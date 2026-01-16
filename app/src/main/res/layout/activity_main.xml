@@ -92,6 +92,7 @@
 
     <!-- Información -->
     <TextView
+        android:id="@+id/instrucciones"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="INSTRUCCIONES:\n\n1. Presiona el botón de arriba\n2. Busca 'Lector Yape' en la lista\n3. Activa el switch manualmente\n4. Regresa a esta app"

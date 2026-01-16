@@ -7,6 +7,7 @@ import android.provider.Settings
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
+import androidx.core.view.isVisible
 import com.example.lectoryape.databinding.ActivityMainBinding
 
 class MainActivity : AppCompatActivity() {
@@ -49,6 +50,7 @@ class MainActivity : AppCompatActivity() {
             binding.btnEnableNotifications.isEnabled = false
             binding.btnEnableNotifications.text = ":V Acceso Habilitado"
             binding.btnEnableNotifications.alpha = 0.6f
+            binding.instrucciones.isVisible = false
         } else {
             // if para cuando no este habilitado
             binding.tvPermissionStatus.text = "Servicio sin permiso "
