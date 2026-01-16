@@ -26,7 +26,7 @@ data class YapeNotificationRaw(
             append(",")
             append(escapeCsv(name))
             append(",")
-            append(escapeCsv(amount.toString()))
+            append("%.2f".format(java.util.Locale.US, amount))
             append(",")
             append(escapeCsv(securityCode))
             append(",")
