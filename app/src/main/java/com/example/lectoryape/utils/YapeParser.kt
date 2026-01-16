@@ -5,20 +5,20 @@ import android.service.notification.StatusBarNotification
 
 object YapeParser {
     // regex para parsear el texto capturado en notificacion
-    private val YAPE_REGEX = Regex("""^(.+?)\s+te\s+envi(?:ó|Ã³)\s+un\s+pago\s+por\s+S/\s*([\d,.]+)""", RegexOption.IGNORE_CASE)
+    private val YAPE_REGEX = Regex("""^(.+?)\s+te\s+envi(?:ó|Ã³)\s+un\s+pago\s+por\s+S/\s*([\d,.]+).*?seguridad\s+es:\s*(\d+)""", RegexOption.IGNORE_CASE)
 
-    fun parse(content: StatusBarNotification): YapeNotificationRaw? {
-        val extras = sbn.notification.extras
-        val title = extras.getString("andrioid.title") ?: ""
+    fun parse(sbn: StatusBarNotification): YapeNotificationRaw? {
+        val text = sbn.notification.extras.getString("android.text") ?: ""
+        val matchResult = YAPE_REGEX.find(text) ?: return null
 
-        val matchResult = YAPE_REGEX.find(content) ?: return null
-
-        val (nombre, monto) = matchResult.destructured
+        val (nombre, monto, codigo) = matchResult.destructured
 
         return YapeNotificationRaw(
-            nombre = nombre.trim(),
-            monto = monto.trim(),
-            fecha = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault()).format(Date())
+            name = nombre.trim(),
+            amount = monto.trim().replace(",","").toDoubleOrNull() ?: 0.0,
+            timestamp = sbn .postTime,
+            securityCode = codigo,
+            notificationId = sbn.id
         )
     }
 }
