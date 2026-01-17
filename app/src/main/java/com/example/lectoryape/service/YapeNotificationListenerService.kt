@@ -4,12 +4,17 @@ import android.content.Intent
 import android.service.notification.NotificationListenerService
 import android.service.notification.StatusBarNotification
 import android.util.Log
+import com.example.lectoryape.firebase.FirebaseUploader
 import com.example.lectoryape.models.YapeNotificationRaw
 import com.example.lectoryape.storage.YapeNotificationStorage
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 
 class YapeNotificationListenerService : NotificationListenerService() {
     
     private lateinit var storage: YapeNotificationStorage
+    private lateinit var firebaseUploader: FirebaseUploader
     
     companion object {
         private const val TAG = "YapeNotificationListener"
@@ -92,16 +97,26 @@ class YapeNotificationListenerService : NotificationListenerService() {
             notificationId = sbn.id
         )
         
-        // Guardar en CSV
+        // Guardar en CSV local (backup)
         val saved = storage.saveNotification(notification)
         if (saved) {
-            Log.i(TAG, "💾 Notificación guardada exitosamente. Total: ${storage.getNotificationCount()}")
-            
-            // Enviar broadcast para notificar a MainActivity
-            sendBroadcast(Intent(ACTION_NOTIFICATION_SAVED))
+            Log.i(TAG, "💾 Notificación guardada en CSV. Total: ${storage.getNotificationCount()}")
         } else {
-            Log.e(TAG, "❌ Error al guardar notificación")
+            Log.e(TAG, "❌ Error al guardar en CSV")
         }
+        
+        // Subir a Firebase (nube)
+        CoroutineScope(Dispatchers.IO).launch {
+            val uploaded = firebaseUploader.uploadNotification(notification)
+            if (uploaded) {
+                Log.i(TAG, "☁️ Notificación subida a Firebase exitosamente")
+            } else {
+                Log.w(TAG, "⚠️ No se pudo subir a Firebase (se quedó en CSV local)")
+            }
+        }
+        
+        // Enviar broadcast para notificar a MainActivity
+        sendBroadcast(Intent(ACTION_NOTIFICATION_SAVED))
         
         // TODO: Aquí aplicaremos el regex para extraer datos estructurados
     }
@@ -109,6 +124,7 @@ class YapeNotificationListenerService : NotificationListenerService() {
     override fun onListenerConnected() {
         super.onListenerConnected()
         storage = YapeNotificationStorage(applicationContext)
+        firebaseUploader = FirebaseUploader(applicationContext)
         Log.d(TAG, "Servicio de notificaciones CONECTADO")
         Log.d(TAG, "📂 Archivo CSV: ${storage.getFilePath()}")
     }
