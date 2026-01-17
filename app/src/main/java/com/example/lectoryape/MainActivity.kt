@@ -5,26 +5,36 @@ import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.net.Uri
+import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
+import android.view.Menu
+import android.view.MenuItem
 import android.widget.Toast
+import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
+import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
 import androidx.core.view.isVisible
+import androidx.lifecycle.lifecycleScope
+import com.example.lectoryape.auth.GoogleAuthManager
 import com.example.lectoryape.databinding.ActivityMainBinding
 import com.example.lectoryape.service.YapeNotificationListenerService
 import com.example.lectoryape.storage.YapeNotificationStorage
+import kotlinx.coroutines.launch
 import java.io.File
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
+
 class MainActivity : AppCompatActivity() {
     
     private lateinit var binding: ActivityMainBinding
     private lateinit var storage: YapeNotificationStorage
+    private lateinit var authManager: GoogleAuthManager
     
     // BroadcastReceiver para escuchar cuando se guardan notificaciones
     private val notificationReceiver = object : BroadcastReceiver() {
@@ -39,16 +49,63 @@ class MainActivity : AppCompatActivity() {
     
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        
+        // Forzar modo claro (light mode)
+        AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO)
+        
+        // Verificar si el usuario está logueado
+        authManager = GoogleAuthManager(this)
+        if (!authManager.isSignedIn()) {
+            navigateToLogin()
+            return
+        }
+        
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
         
         storage = YapeNotificationStorage(this)
         
         setupUI()
+        displayUserInfo()
         checkNotificationPermission()
         updateNotificationCount()
     }
     
+    override fun onCreateOptionsMenu(menu: Menu?): Boolean {
+        menuInflater.inflate(R.menu.main_menu, menu)
+        return true
+    }
+    
+    override fun onOptionsItemSelected(item: MenuItem): Boolean {
+        return when (item.itemId) {
+            R.id.action_logout -> {
+                logout()
+                true
+            }
+            else -> super.onOptionsItemSelected(item)
+        }
+    }
+    
+    private fun displayUserInfo() {
+        val userEmail = authManager.getUserEmail() ?: "Usuario"
+        supportActionBar?.subtitle = userEmail
+    }
+    
+    private fun logout() {
+        lifecycleScope.launch {
+            authManager.signOut {
+                navigateToLogin()
+            }
+        }
+    }
+    
+    private fun navigateToLogin() {
+        val intent = Intent(this, LoginActivity::class.java)
+        startActivity(intent)
+        finish()
+    }
+    
+    @RequiresApi(Build.VERSION_CODES.O)
     override fun onResume() {
         super.onResume()
         // Registrar el receiver para escuchar broadcasts
