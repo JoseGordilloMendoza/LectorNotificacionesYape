@@ -6,7 +6,7 @@ import java.util.Date
 import java.util.Locale
 
 /**
- * Utilidades para formatear fechas en  la UI
+ * ESTO EN TEORIA PUEDE SER REEMPLAZADO, POR ELREGEX , ASI QUE PUEDE BORRARSE
  */
 object DateFormatter {
     

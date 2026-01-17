@@ -75,11 +75,23 @@ class MainActivity : AppCompatActivity() {
         firebaseUploader = FirebaseUploader(this)
         
         setupUI()
-        setupRecyclerView()
+        
+        try {
+            android.util.Log.d("MainActivity", "🔧 Inicializando RecyclerView...")
+            setupRecyclerView()
+        } catch (e: Exception) {
+            android.util.Log.e("MainActivity", "❌ Error al inicializar RecyclerView: ${e.message}", e)
+        }
+        
         displayUserInfo()
         checkNotificationPermission()
         updateNotificationCount()
-        loadYapeos()
+        
+        try {
+            loadYapeos()
+        } catch (e: Exception) {
+            android.util.Log.e("MainActivity", "❌ Error al cargar yapeos: ${e.message}", e)
+        }
     }
     
     override fun onCreateOptionsMenu(menu: Menu?): Boolean {
@@ -347,8 +359,15 @@ class MainActivity : AppCompatActivity() {
     private fun loadYapeos() {
         lifecycleScope.launch {
             try {
+                android.util.Log.d("MainActivity", "🔍 Iniciando carga de yapeos...")
+                
                 val yapeos = withContext(Dispatchers.IO) {
                     firebaseUploader.getUserYapeos()
+                }
+                
+                android.util.Log.d("MainActivity", "📊 Yapeos recibidos: ${yapeos.size}")
+                yapeos.forEach { data ->
+                    android.util.Log.d("MainActivity", "  - ${data["userEmail"]} | ${data["text"]}")
                 }
 
                 val displayItems = yapeos.map { data ->
@@ -364,9 +383,12 @@ class MainActivity : AppCompatActivity() {
                 }
 
                 yapeosAdapter.updateYapeos(displayItems)
+                
+                android.util.Log.d("MainActivity", "✅ RecyclerView actualizado con ${displayItems.size} items")
 
             } catch (e: Exception) {
-                Toast.makeText(this@MainActivity, "Error al cargar yapeos", Toast.LENGTH_SHORT).show()
+                android.util.Log.e("MainActivity", "❌ Error al cargar yapeos: ${e.message}", e)
+                Toast.makeText(this@MainActivity, "Error al cargar yapeos: ${e.message}", Toast.LENGTH_LONG).show()
             }
         }
     }
