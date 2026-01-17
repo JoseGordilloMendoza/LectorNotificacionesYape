@@ -84,4 +84,42 @@ class FirebaseUploader(private val context: Context) {
             0
         }
     }
+    
+    /**
+     * Obtiene los yapeos del usuario actual (filtrado por email)
+     */
+    suspend fun getUserYapeos(): List<Map<String, Any>> {
+        return try {
+            val userEmail = authManager.getUserEmail()
+            Log.d(TAG, "🔍 Buscando yapeos para email: $userEmail")
+            
+            if (userEmail == null) {
+                Log.w(TAG, "⚠️ No hay usuario logueado")
+                return emptyList()
+            }
+            
+            Log.d(TAG, "📡 Ejecutando consulta a Firebase...")
+            val snapshot = firestore.collection(COLLECTION_NAME)
+                .whereEqualTo("userEmail", userEmail)
+                // .orderBy("timestamp", com.google.firebase.firestore.Query.Direction.DESCENDING) // Index required
+                .limit(100) // Limitar a últimos 100 yapeos
+                .get()
+                .await()
+            
+            Log.d(TAG, "📊 Documentos encontrados: ${snapshot.size()}")
+            snapshot.documents.forEach { doc ->
+                Log.d(TAG, "  - Doc ID: ${doc.id}, Email: ${doc.data?.get("userEmail")}")
+            }
+            
+            val results = snapshot.documents.mapNotNull { doc ->
+                doc.data
+            }
+            
+            Log.d(TAG, "✅ Retornando ${results.size} yapeos")
+            results
+        } catch (e: Exception) {
+            Log.e(TAG, "❌ Error al obtener yapeos del usuario: ${e.message}", e)
+            emptyList()
+        }
+    }
 }
