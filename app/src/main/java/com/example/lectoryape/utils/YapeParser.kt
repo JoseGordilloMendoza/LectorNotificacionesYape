@@ -1,22 +1,43 @@
 package com.example.lectoryape.utils
 
-import com.example.lectoryape.models.YapeNotificationRaw
 import android.service.notification.StatusBarNotification
+import android.util.Log
+import com.example.lectoryape.models.YapeNotificationRaw
 
 object YapeParser {
-    // regex para parsear el texto capturado en notificacion
-    private val YAPE_REGEX = Regex("""^(.+?)\s+te\s+envi(?:ó|Ã³)\s+un\s+pago\s+por\s+S/\s*([\d,.]+).*?seguridad\s+es:\s*(\d+)""", RegexOption.IGNORE_CASE)
+    // expresión regular para capturar los datos de la notificación
+    private val YAPE_REGEX = Regex(
+        """(.+?)\s+te\s+envi(?:ó|Ã³)\s+un\s+pago\s+por\s+S/\s*([\d,.]+).*?seguridad\s+es:\s*(\d+)""",
+        RegexOption.IGNORE_CASE
+    )
 
     fun parse(sbn: StatusBarNotification): YapeNotificationRaw? {
-        val text = sbn.notification.extras.getString("android.text") ?: ""
+        val extras = sbn.notification.extras
+        val title = extras.getString("android.title") ?: ""
+        val text = extras.getString("android.text") ?: ""
+
+        // si el título no parece una confirmación de pago, lo descartamos rápido
+        if (!title.contains("Confirmación", ignoreCase = true) &&
+            !title.contains("Pago", ignoreCase = true)) {
+            return null
+        }
+
+        // 2. extracción de datos del cuerpo del mensaje
         val matchResult = YAPE_REGEX.find(text) ?: return null
 
-        val (nombre, monto, codigo) = matchResult.destructured
+        val (nombre, montoStr, codigo) = matchResult.destructured
 
+        val montoLimpio = montoStr
+            .replace(",", "")
+            .trimEnd('.')
+            .toDoubleOrNull() ?: 0.0
+
+        // 3. RETORNO DEL MODELO LIMPIO
         return YapeNotificationRaw(
+            title = title,
             name = nombre.trim(),
-            amount = monto.trim().replace(",","").toDoubleOrNull() ?: 0.0,
-            timestamp = sbn .postTime,
+            amount = montoLimpio,
+            timestamp = sbn.postTime,
             securityCode = codigo,
             notificationId = sbn.id
         )

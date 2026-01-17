@@ -7,6 +7,9 @@ import android.util.Log
 import com.example.lectoryape.models.YapeNotificationRaw
 import com.example.lectoryape.storage.YapeNotificationStorage
 import com.example.lectoryape.utils.YapeParser
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 class YapeNotificationListenerService : NotificationListenerService() {
     // se usa para seguridad con posibles problemas de arranque
@@ -15,10 +18,10 @@ class YapeNotificationListenerService : NotificationListenerService() {
     companion object {
         private const val TAG = "YapeNotificationListener"
         // debuggeo xd
-        private const val DEBUG_MODE = false
+        private const val DEBUG_MODE = true
         
         // pakeich de yape xd
-        private const val YAPE_PACKAGE = "com.bcp.innovabcp.yapeapp"
+        private const val YAPE_PACKAGE = "com.bcp.innovacxion.yapeapp"
         
         // Acción del broadcast para notificar a MainActivity
         const val ACTION_NOTIFICATION_SAVED = "com.example.lectoryape.NOTIFICATION_SAVED"
@@ -50,21 +53,20 @@ class YapeNotificationListenerService : NotificationListenerService() {
      */
     private fun logNotificationDetails(sbn: StatusBarNotification) {
         val extras = sbn.notification.extras
-        
-        Log.d(TAG, "╔═══════════════════════════════════════════")
-        Log.d(TAG, "║ NUEVA NOTIFICACIÓN")
-        Log.d(TAG, "╠═══════════════════════════════════════════")
-        Log.d(TAG, "║ Package: ${sbn.packageName}")
-        Log.d(TAG, "║ ID: ${sbn.id}")
-        Log.d(TAG, "║ Timestamp: ${sbn.postTime}")
-        Log.d(TAG, "║ ---")
-        Log.d(TAG, "║ Title: ${extras.getString("android.title")}")
-        Log.d(TAG, "║ Text: ${extras.getString("android.text")}")
-        Log.d(TAG, "║ SubText: ${extras.getString("android.subText")}")
-        Log.d(TAG, "║ BigText: ${extras.getCharSequence("android.bigText")}")
-        Log.d(TAG, "║ InfoText: ${extras.getString("android.infoText")}")
-        Log.d(TAG, "║ Summary: ${extras.getString("android.summaryText")}")
-        Log.d(TAG, "╚═══════════════════════════════════════════")
+        val title = extras.getString("android.title") ?: "Sin título"
+        val text = extras.getString("android.text") ?: "Sin texto"
+        // bigText suele ser CharSequence, lo forzamos a String
+        val bigText = extras.getCharSequence("android.bigText")?.toString() ?: "No hay informacion detallada"
+
+        Log.d(TAG, """
+        ══ DEBUG NOTIFICACIÓN ══
+        App: ${sbn.packageName}
+        ID: ${sbn.id}
+        Title: $title
+        Text: $text
+        BigText: $bigText
+        ══════════════════════════
+    """.trimIndent())
     }
     
     /**
@@ -94,12 +96,15 @@ class YapeNotificationListenerService : NotificationListenerService() {
     }
 
     private fun logYapePayment(payment: YapeNotificationRaw) {
+        val dateFormat = SimpleDateFormat("dd/MM/yyyy HH:mm:ss", Locale.getDefault())
+        val fechaLegible = dateFormat.format(Date(payment.timestamp))
+
         Log.d(TAG, """
-        🟢 ═══ PAGO RECIBIDO ═══
-        👤 Cliente: ${payment.name}
-        💰 Monto:   S/ ${"%.2f".format(payment.amount)}
-        🔑 Código:  ${payment.securityCode}
-        ⏰ Time:    ${payment.timestamp}
+        ═══ PAGO RECIBIDO ═══
+        Cliente: ${payment.name}
+        Monto:   S/ ${"%.2f".format(payment.amount)}
+        Código:  ${payment.securityCode}
+        Time:    $fechaLegible
         ════════════════════════
     """.trimIndent())
     }
@@ -113,7 +118,7 @@ class YapeNotificationListenerService : NotificationListenerService() {
     override fun onListenerConnected() {
         super.onListenerConnected()
         Log.d(TAG, "Servicio de notificaciones CONECTADO")
-        Log.d(TAG, "📂 Archivo CSV: ${storage.getFilePath()}")
+        Log.d(TAG, "Archivo CSV: ${storage.getFilePath()}")
     }
     
     override fun onListenerDisconnected() {
