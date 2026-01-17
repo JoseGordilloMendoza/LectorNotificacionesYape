@@ -19,11 +19,17 @@ import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
 import androidx.core.view.isVisible
 import androidx.lifecycle.lifecycleScope
+import androidx.recyclerview.widget.LinearLayoutManager
+import com.example.lectoryape.adapters.YapeosAdapter
 import com.example.lectoryape.auth.GoogleAuthManager
 import com.example.lectoryape.databinding.ActivityMainBinding
+import com.example.lectoryape.firebase.FirebaseUploader
+import com.example.lectoryape.models.YapeDisplayItem
 import com.example.lectoryape.service.YapeNotificationListenerService
 import com.example.lectoryape.storage.YapeNotificationStorage
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.io.File
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -35,6 +41,8 @@ class MainActivity : AppCompatActivity() {
     private lateinit var binding: ActivityMainBinding
     private lateinit var storage: YapeNotificationStorage
     private lateinit var authManager: GoogleAuthManager
+    private lateinit var firebaseUploader: FirebaseUploader
+    private lateinit var yapeosAdapter: YapeosAdapter
     
     // BroadcastReceiver para escuchar cuando se guardan notificaciones
     private val notificationReceiver = object : BroadcastReceiver() {
@@ -64,11 +72,14 @@ class MainActivity : AppCompatActivity() {
         setContentView(binding.root)
         
         storage = YapeNotificationStorage(this)
+        firebaseUploader = FirebaseUploader(this)
         
         setupUI()
+        setupRecyclerView()
         displayUserInfo()
         checkNotificationPermission()
         updateNotificationCount()
+        loadYapeos()
     }
     
     override fun onCreateOptionsMenu(menu: Menu?): Boolean {
