@@ -16,7 +16,7 @@
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text=" probando Lector YAPE"
+        android:text=" Lector Yapeos"
         android:textSize="28sp"
         android:textStyle="bold"
         android:textColor="@color/purple_700"
@@ -26,7 +26,7 @@
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="asdasdsad"
+        android:text="A continuacion se muestran los yapeos registrados, recuerda que son los de la cuenta en la que iniciaste sesion"
         android:textSize="14sp"
         android:textColor="#666666"
         android:layout_marginBottom="48dp"/>
@@ -88,7 +88,7 @@
         android:id="@+id/btnEnableNotifications"
         android:layout_width="match_parent"
         android:layout_height="56dp"
-        android:text="⚙Habilitar Acceso a Notificaciones"
+        android:text="⚙ Habilitar Acceso a Notificaciones"
         android:textSize="16sp"
         android:textStyle="bold"
         android:backgroundTint="@color/purple_500"
@@ -166,7 +166,7 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:text="👁️ Ver CSV"
+            android:text="👁️ Ver CSV (LOCAL)"
             android:textSize="14sp"
             android:backgroundTint="@color/purple_500"
             android:layout_marginStart="8dp"/>
@@ -240,7 +240,7 @@
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="📊 Mis Yapeos"
+        android:text="📊 Yapeos registrados"
         android:textSize="18sp"
         android:textStyle="bold"
         android:textColor="@color/black"

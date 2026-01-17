@@ -58,10 +58,10 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         
-        // Forzar modo claro (light mode)
+        // modo claro, al pepo se le distorsiona xd
         AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO)
         
-        // Verificar si el usuario está logueado
+        //user esta logged
         authManager = GoogleAuthManager(this)
         if (!authManager.isSignedIn()) {
             navigateToLogin()
@@ -173,26 +173,41 @@ class MainActivity : AppCompatActivity() {
     }
     
     /**
-     * Actualiza el contador de notificaciones en la UI
+     * Actualiza el contador de notificaciones en la UI (desde Firebase)
      */
     private fun updateNotificationCount() {
-        val count = storage.getNotificationCount()
-        binding.tvTransactionCount.text = count.toString()
-        
-        // Mostrar/ocultar botones según haya datos
-        val hasData = count > 0
-        binding.btnExportCsv.isEnabled = hasData
-        binding.btnViewCsv.isEnabled = hasData
-        binding.btnClearData.isEnabled = hasData
-        
-        if (!hasData) {
-            binding.btnExportCsv.alpha = 0.5f
-            binding.btnViewCsv.alpha = 0.5f
-            binding.btnClearData.alpha = 0.5f
-        } else {
-            binding.btnExportCsv.alpha = 1.0f
-            binding.btnViewCsv.alpha = 1.0f
-            binding.btnClearData.alpha = 1.0f
+        lifecycleScope.launch {
+            try {
+                // Obtener conteo desde Firebase (filtrado por usuario)
+                val count = withContext(Dispatchers.IO) {
+                    firebaseUploader.getUserYapeos().size
+                }
+                
+                binding.tvTransactionCount.text = count.toString()
+                
+                // Mostrar/ocultar botones según haya datos
+                val hasData = count > 0
+                binding.btnExportCsv.isEnabled = hasData
+                binding.btnViewCsv.isEnabled = hasData
+                binding.btnClearData.isEnabled = hasData
+                
+                if (!hasData) {
+                    binding.btnExportCsv.alpha = 0.5f
+                    binding.btnViewCsv.alpha = 0.5f
+                    binding.btnClearData.alpha = 0.5f
+                } else {
+                    binding.btnExportCsv.alpha = 1.0f
+                    binding.btnViewCsv.alpha = 1.0f
+                    binding.btnClearData.alpha = 1.0f
+                }
+                
+                android.util.Log.d("MainActivity", "📊 Contador actualizado: $count yapeos en Firebase")
+            } catch (e: Exception) {
+                android.util.Log.e("MainActivity", "Error al actualizar contador: ${e.message}", e)
+                // Fallback a conteo local si falla Firebase
+                val count = storage.getNotificationCount()
+                binding.tvTransactionCount.text = count.toString()
+            }
         }
     }
     
@@ -296,7 +311,7 @@ class MainActivity : AppCompatActivity() {
             binding.statusIndicator.backgroundTintList = 
                 ContextCompat.getColorStateList(this, android.R.color.holo_green_dark)
             binding.btnEnableNotifications.isEnabled = false
-            binding.btnEnableNotifications.text = ":V Acceso Habilitado"
+            binding.btnEnableNotifications.text = "Acceso Habilitado"
             binding.btnEnableNotifications.alpha = 0.6f
             binding.instrucciones.isVisible = false
         } else {
