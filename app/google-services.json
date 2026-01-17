@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "262539776525",
+    "project_id": "lectoryape",
+    "storage_bucket": "lectoryape.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:262539776525:android:701da7a1266a610484bb44",
+        "android_client_info": {
+          "package_name": "com.example.lectoryape"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDLapeC2Gh8Av2lzufNtKUJIxcOOYpv6ic"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
