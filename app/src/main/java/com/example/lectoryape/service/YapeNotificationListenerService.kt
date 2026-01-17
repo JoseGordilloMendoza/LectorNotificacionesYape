@@ -20,7 +20,7 @@ class YapeNotificationListenerService : NotificationListenerService() {
         private const val TAG = "YapeNotificationListener"
         
         // debuggeo xd
-        private const val DEBUG_MODE = true  // ← Cambiado para testing
+        private const val DEBUG_MODE = false  // ← Cambiado para testing
         
         // pakeich de yape xd
         private const val YAPE_PACKAGE = "com.bcp.innovacxion.yapeapp"
