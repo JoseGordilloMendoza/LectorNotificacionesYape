@@ -336,4 +336,38 @@ class MainActivity : AppCompatActivity() {
             ).show()
         }
     }
+
+    private fun setupRecyclerView() {
+        yapeosAdapter = YapeosAdapter()
+        binding.rvYapeos.apply {
+            layoutManager = LinearLayoutManager(this@MainActivity)
+            adapter = yapeosAdapter
+        }
+    }
+    private fun loadYapeos() {
+        lifecycleScope.launch {
+            try {
+                val yapeos = withContext(Dispatchers.IO) {
+                    firebaseUploader.getUserYapeos()
+                }
+
+                val displayItems = yapeos.map { data ->
+                    val timestamp = data["timestamp"] as? Long ?: 0L
+                    val text = data["text"] as? String ?: ""
+
+                    YapeDisplayItem(
+                        monto = com.example.lectoryape.utils.DateFormatter.extractMonto(text),
+                        texto = text,
+                        fecha = com.example.lectoryape.utils.DateFormatter.formatTimestamp(timestamp),
+                        timestamp = timestamp
+                    )
+                }
+
+                yapeosAdapter.updateYapeos(displayItems)
+
+            } catch (e: Exception) {
+                Toast.makeText(this@MainActivity, "Error al cargar yapeos", Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
 }
