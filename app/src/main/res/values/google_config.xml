@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- TODO: Reemplazar con tu Client ID de Google Cloud Console -->
+    <string name="google_client_id">358340989229-ht6k44lhdd366olvh69fsq41t7auhlre.apps.googleusercontent.com</string>
+    
+    <!-- Scopes necesarios para Google Sheets -->
+    <string name="google_sheets_scope">https://www.googleapis.com/auth/spreadsheets</string>
+</resources>
