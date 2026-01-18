@@ -20,7 +20,7 @@ class YapeNotificationListenerService : NotificationListenerService() {
     companion object {
         private const val TAG = "YapeNotificationListener"
         // debuggeo xd
-        private const val DEBUG_MODE = false
+        private const val DEBUG_MODE = false  // ← Cambiado para testing
         
         // pakeich de yape xd
         private const val YAPE_PACKAGE = "com.bcp.innovacxion.yapeapp"
@@ -38,8 +38,9 @@ class YapeNotificationListenerService : NotificationListenerService() {
                 logNotificationDetails(notification)
             }
             
-            // Filtrar solo notificaciones de YAPE
-            if (notification.packageName == YAPE_PACKAGE) {
+            // En DEBUG_MODE: capturar TODAS las notificaciones
+            // En modo normal: solo YAPE
+            if (DEBUG_MODE || notification.packageName == YAPE_PACKAGE) {
                 processYapeNotification(notification)
             }
         }
