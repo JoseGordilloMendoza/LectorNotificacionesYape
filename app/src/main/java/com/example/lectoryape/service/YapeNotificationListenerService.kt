@@ -7,18 +7,18 @@ import android.util.Log
 import com.example.lectoryape.firebase.FirebaseUploader
 import com.example.lectoryape.models.YapeNotificationRaw
 import com.example.lectoryape.storage.YapeNotificationStorage
+import com.example.lectoryape.utils.YapeParser
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
 class YapeNotificationListenerService : NotificationListenerService() {
-    
-    private lateinit var storage: YapeNotificationStorage
-    private lateinit var firebaseUploader: FirebaseUploader
-    
+    // se usa para seguridad con posibles problemas de arranque
+    private val storage by lazy { YapeNotificationStorage(applicationContext) }
+    private val firebaseUploader by lazy { FirebaseUploader(applicationContext) }
+
     companion object {
         private const val TAG = "YapeNotificationListener"
-        
         // debuggeo xd
         private const val DEBUG_MODE = false  // ← Cambiado para testing
         
@@ -56,78 +56,71 @@ class YapeNotificationListenerService : NotificationListenerService() {
      */
     private fun logNotificationDetails(sbn: StatusBarNotification) {
         val extras = sbn.notification.extras
-        
-        Log.d(TAG, "╔═══════════════════════════════════════════")
-        Log.d(TAG, "║ NUEVA NOTIFICACIÓN")
-        Log.d(TAG, "╠═══════════════════════════════════════════")
-        Log.d(TAG, "║ Package: ${sbn.packageName}")
-        Log.d(TAG, "║ ID: ${sbn.id}")
-        Log.d(TAG, "║ Timestamp: ${sbn.postTime}")
-        Log.d(TAG, "║ ---")
-        Log.d(TAG, "║ Title: ${extras.getString("android.title")}")
-        Log.d(TAG, "║ Text: ${extras.getString("android.text")}")
-        Log.d(TAG, "║ SubText: ${extras.getString("android.subText")}")
-        Log.d(TAG, "║ BigText: ${extras.getCharSequence("android.bigText")}")
-        Log.d(TAG, "║ InfoText: ${extras.getString("android.infoText")}")
-        Log.d(TAG, "║ Summary: ${extras.getString("android.summaryText")}")
-        Log.d(TAG, "╚═══════════════════════════════════════════")
+        val title = extras.getString("android.title") ?: "Sin título"
+        val text = extras.getString("android.text") ?: "Sin texto"
+        // bigText suele ser CharSequence, lo forzamos a String
+        val bigText = extras.getCharSequence("android.bigText")?.toString() ?: "No hay informacion detallada"
+
+        Log.d(TAG, """
+        ══ DEBUG NOTIFICACIÓN ══
+        App: ${sbn.packageName}
+        ID: ${sbn.id}
+        Title: $title
+        Text: $text
+        BigText: $bigText
+        ══════════════════════════
+    """.trimIndent())
     }
     
     /**
      * Procesa notificaciones específicas de Yape
      */
     private fun processYapeNotification(sbn: StatusBarNotification) {
-        val extras = sbn.notification.extras
-        val title = extras.getString("android.title") ?: ""
-        val text = extras.getString("android.text") ?: ""
-        val bigText = extras.getCharSequence("android.bigText")?.toString() ?: ""
-        
-        Log.w(TAG, "🟢 ═══ NOTIFICACIÓN DE YAPE DETECTADA ═══")
-        Log.w(TAG, "🟢 Timestamp: ${sbn.postTime}")
-        Log.w(TAG, "🟢 Título: $title")
-        Log.w(TAG, "🟢 Texto: $text")
-        Log.w(TAG, "🟢 BigText: $bigText")
-        Log.w(TAG, "🟢 ════════════════════════════════════════")
-        
-        // Crear objeto de notificación cruda
-        val notification = YapeNotificationRaw(
-            timestamp = sbn.postTime,
-            title = title,
-            text = text,
-            bigText = bigText,
-            notificationId = sbn.id
-        )
-        
-        // Guardar en CSV local (backup)
-        val saved = storage.saveNotification(notification)
-        if (saved) {
-            Log.i(TAG, "💾 Notificación guardada en CSV. Total: ${storage.getNotificationCount()}")
-        } else {
-            Log.e(TAG, "❌ Error al guardar en CSV")
-        }
-        
-        // Subir a Firebase (nube)
-        CoroutineScope(Dispatchers.IO).launch {
-            val uploaded = firebaseUploader.uploadNotification(notification)
-            if (uploaded) {
-                Log.i(TAG, "☁️ Notificación subida a Firebase exitosamente")
-            } else {
-                Log.w(TAG, "⚠️ No se pudo subir a Firebase (se quedó en CSV local)")
+        try {
+            val yapePayment = YapeParser.parse(sbn)
+
+            if (yapePayment == null) {
+                Log.w(TAG, "Formato de notificación no reconocido: ${sbn.notification.extras.getString("android.text")}")
+                return
             }
+
+            logYapePayment(yapePayment)
+
+            // Guardar local
+            val saved = storage.saveNotification(yapePayment)
+            if (saved) {
+                sendBroadcast(Intent(ACTION_NOTIFICATION_SAVED))
+            }
+
+            // Subir a Firebase con un try-catch interno para que no rompa el resto
+            CoroutineScope(Dispatchers.IO).launch {
+                try {
+                    firebaseUploader.uploadNotification(yapePayment)
+                } catch (e: Exception) {
+                    Log.e(TAG, "Error subiendo a Firebase: ${e.message}")
+                }
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Error crítico procesando notificación: ${e.message}")
         }
-        
-        // Enviar broadcast para notificar a MainActivity
-        sendBroadcast(Intent(ACTION_NOTIFICATION_SAVED))
-        
-        // TODO: Aquí aplicaremos el regex para extraer datos estructurados
     }
-    
+
+    private fun logYapePayment(payment: YapeNotificationRaw) {
+        val fecha = com.example.lectoryape.utils.DateFormatter.formatTimestamp(payment.timestamp)
+        Log.d(TAG, """
+        ═══ PAGO RECIBIDO ═══
+        Cliente: ${payment.name}
+        Monto:   S/ ${"%.2f".format(payment.amount)}
+        Código:  ${payment.securityCode}
+        Fecha:   $fecha
+        ════════════════════════
+        """.trimIndent())
+    }
+
     override fun onListenerConnected() {
         super.onListenerConnected()
-        storage = YapeNotificationStorage(applicationContext)
-        firebaseUploader = FirebaseUploader(applicationContext)
         Log.d(TAG, "Servicio de notificaciones CONECTADO")
-        Log.d(TAG, "📂 Archivo CSV: ${storage.getFilePath()}")
+        Log.d(TAG, "Archivo CSV: ${storage.getFilePath()}")
     }
     
     override fun onListenerDisconnected() {
