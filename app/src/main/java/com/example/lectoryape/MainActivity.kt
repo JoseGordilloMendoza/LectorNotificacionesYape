@@ -47,11 +47,11 @@ class MainActivity : AppCompatActivity() {
     // BroadcastReceiver para escuchar cuando se guardan notificaciones
     private val notificationReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
-            if (intent?.action == YapeNotificationListenerService.ACTION_NOTIFICATION_SAVED) {
-                // Actualizar UI en tiempo real
-                updateNotificationCount()
-                Toast.makeText(this@MainActivity, "📱 Nueva notificación guardada", Toast.LENGTH_SHORT).show()
-            }
+            // Actualizar contador
+            updateNotificationCount()
+            
+            // Recargar lista de yapeos automáticamente
+            loadYapeos()
         }
     }
     
