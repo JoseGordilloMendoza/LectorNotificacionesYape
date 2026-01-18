@@ -10,6 +10,7 @@ package com.example.lectoryape.models
  * @property notificationId ID único de la notificación en el sistema
  */
 data class YapeNotificationRaw(
+    val title: String,
     val name: String,
     val amount: Double,
     val timestamp: Long,

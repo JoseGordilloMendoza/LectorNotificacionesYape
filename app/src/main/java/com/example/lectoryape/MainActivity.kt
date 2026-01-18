@@ -375,35 +375,36 @@ class MainActivity : AppCompatActivity() {
         lifecycleScope.launch {
             try {
                 android.util.Log.d("MainActivity", "🔍 Iniciando carga de yapeos...")
-                
+
                 val yapeos = withContext(Dispatchers.IO) {
                     firebaseUploader.getUserYapeos()
-                }
-                
-                android.util.Log.d("MainActivity", "📊 Yapeos recibidos: ${yapeos.size}")
-                yapeos.forEach { data ->
-                    android.util.Log.d("MainActivity", "  - ${data["userEmail"]} | ${data["text"]}")
                 }
 
                 val displayItems = yapeos.map { data ->
                     val timestamp = data["timestamp"] as? Long ?: 0L
-                    val text = data["text"] as? String ?: ""
+
+                    // CORRECCIÓN: Usamos los campos nuevos del modelo
+                    val name = data["name"] as? String ?: "Desconocido"
+                    val amount = when(val a = data["amount"]) {
+                        is Double -> a
+                        is Long -> a.toDouble() // Firebase a veces guarda números como Long
+                        else -> 0.0
+                    }
+                    val title = data["title"] as? String ?: "Yape"
 
                     YapeDisplayItem(
-                        monto = com.example.lectoryape.utils.DateFormatter.extractMonto(text),
-                        texto = text,
+                        monto = amount.toString(),
+                        texto = "$title de $name", // Armamos un texto visual
                         fecha = com.example.lectoryape.utils.DateFormatter.formatTimestamp(timestamp),
                         timestamp = timestamp
                     )
                 }
 
                 yapeosAdapter.updateYapeos(displayItems)
-                
-                android.util.Log.d("MainActivity", "✅ RecyclerView actualizado con ${displayItems.size} items")
+                android.util.Log.d("MainActivity", "✅ RecyclerView actualizado")
 
             } catch (e: Exception) {
                 android.util.Log.e("MainActivity", "❌ Error al cargar yapeos: ${e.message}", e)
-                Toast.makeText(this@MainActivity, "Error al cargar yapeos: ${e.message}", Toast.LENGTH_LONG).show()
             }
         }
     }

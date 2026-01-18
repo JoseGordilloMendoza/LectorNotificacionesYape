@@ -11,9 +11,10 @@ object YapeParser {
         val text = sbn.notification.extras.getString("android.text") ?: ""
         val matchResult = YAPE_REGEX.find(text) ?: return null
 
-        val (nombre, monto, codigo) = matchResult.destructured
+        val (titulo, nombre, monto, codigo) = matchResult.destructured
 
         return YapeNotificationRaw(
+            title = titulo.trim(),
             name = nombre.trim(),
             amount = monto.trim().replace(",","").toDoubleOrNull() ?: 0.0,
             timestamp = sbn .postTime,

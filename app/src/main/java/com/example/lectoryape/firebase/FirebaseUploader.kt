@@ -25,28 +25,27 @@ class FirebaseUploader(private val context: Context) {
      */
     suspend fun uploadNotification(notification: YapeNotificationRaw): Boolean {
         return try {
-            // Obtener email del usuario logueado
             val userEmail = authManager.getUserEmail() ?: "unknown"
-            
-            // Crear documento para Firestore
+
+            // CORREGIDO: Usamos los campos reales de tu nuevo modelo
             val data = hashMapOf(
+                "title" to notification.title, // Agregado recientemente
+                "name" to notification.name,
+                "amount" to notification.amount,
+                "securityCode" to notification.securityCode,
                 "timestamp" to notification.timestamp,
-                "title" to notification.title,
-                "text" to notification.text,
-                "bigText" to notification.bigText,
                 "notificationId" to notification.notificationId,
                 "userEmail" to userEmail,
                 "uploadedAt" to System.currentTimeMillis()
             )
-            
-            // Subir a Firestore
+
             firestore.collection(COLLECTION_NAME)
                 .add(data)
                 .await()
-            
+
             Log.d(TAG, "✅ Notificación subida exitosamente a Firebase")
             true
-            
+
         } catch (e: Exception) {
             Log.e(TAG, "❌ Error al subir a Firebase: ${e.message}", e)
             false
