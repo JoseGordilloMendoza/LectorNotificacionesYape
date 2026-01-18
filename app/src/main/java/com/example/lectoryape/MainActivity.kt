@@ -115,9 +115,27 @@ class MainActivity : AppCompatActivity() {
     }
     
     private fun logout() {
+        // Mostrar confirmación antes de cerrar sesión
+        AlertDialog.Builder(this)
+            .setTitle("Cerrar sesión")
+            .setMessage("¿Estás seguro que deseas cerrar sesión?")
+            .setPositiveButton("Sí") { _, _ ->
+                performLogout()
+            }
+            .setNegativeButton("Cancelar", null)
+            .show()
+    }
+    
+    private fun performLogout() {
         lifecycleScope.launch {
-            authManager.signOut {
-                navigateToLogin()
+            try {
+                authManager.signOut {
+                    Toast.makeText(this@MainActivity, "Sesión cerrada", Toast.LENGTH_SHORT).show()
+                    navigateToLogin()
+                }
+            } catch (e: Exception) {
+                android.util.Log.e("MainActivity", "Error al cerrar sesión: ${e.message}", e)
+                Toast.makeText(this@MainActivity, "Error al cerrar sesión", Toast.LENGTH_SHORT).show()
             }
         }
     }
@@ -151,6 +169,11 @@ class MainActivity : AppCompatActivity() {
     }
     
     private fun setupUI() {
+        // Botón de logout
+        binding.btnLogout.setOnClickListener {
+            logout()
+        }
+        
         // Botón para abrir configuración de notificaciones
         binding.btnEnableNotifications.setOnClickListener {
             openNotificationSettings()

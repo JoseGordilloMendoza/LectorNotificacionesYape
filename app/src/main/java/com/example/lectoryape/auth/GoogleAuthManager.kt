@@ -33,10 +33,11 @@ class GoogleAuthManager(private val context: Context) {
     }
     
     /**
-     * Verifica si el usuario ya está logueado
+     * Verifica si el usuario ya está logueado y la sesión es válida
      */
     fun isSignedIn(): Boolean {
-        return GoogleSignIn.getLastSignedInAccount(context) != null
+        val account = GoogleSignIn.getLastSignedInAccount(context)
+        return account != null && !account.isExpired
     }
     
     /**
