@@ -16,12 +16,15 @@ class GoogleAuthManager(private val context: Context) {
     companion object {
         private const val TAG = "GoogleAuthManager"
     }
-    
+
     private val googleSignInClient: GoogleSignInClient by lazy {
+        val webClientId = context.getString(com.example.lectoryape.R.string.default_web_client_id)
+
         val gso = GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
+            .requestIdToken(webClientId) // <--- ¡ESTA ES LA LÍNEA QUE TE FALTABA!
             .requestEmail()
             .build()
-        
+
         GoogleSignIn.getClient(context, gso)
     }
     
