@@ -1,50 +1,40 @@
 package com.example.lectoryape.utils
 
 import java.text.SimpleDateFormat
-import java.util.Calendar
 import java.util.Date
 import java.util.Locale
 
-/**
- * ESTO EN TEORIA PUEDE SER REEMPLAZADO, POR ELREGEX , ASI QUE PUEDE BORRARSE
- */
 object DateFormatter {
-    
+
+    // PATRÓN CONSTANTE
+    private const val DATE_PATTERN = "yyyy-MM-dd HH:mm:ss"
+
     fun formatTimestamp(timestamp: Long): String {
-        val now = Calendar.getInstance()
-        val notificationTime = Calendar.getInstance().apply {
-            timeInMillis = timestamp
+        // 1. Validación: Si el tiempo es 0 o negativo, devolvemos un placeholder
+        if (timestamp <= 0L) {
+            return "Fecha inválida"
         }
-        
-        val dateFormat = SimpleDateFormat("HH:mm", Locale.getDefault())
-        val timeStr = dateFormat.format(Date(timestamp))
-        
-        return when {
-            // Hoy
-            now.get(Calendar.DAY_OF_YEAR) == notificationTime.get(Calendar.DAY_OF_YEAR) &&
-            now.get(Calendar.YEAR) == notificationTime.get(Calendar.YEAR) -> {
-                "Hoy $timeStr"
-            }
-            // Ayer
-            now.get(Calendar.DAY_OF_YEAR) - 1 == notificationTime.get(Calendar.DAY_OF_YEAR) &&
-            now.get(Calendar.YEAR) == notificationTime.get(Calendar.YEAR) -> {
-                "Ayer $timeStr"
-            }
-            // Otro día
-            else -> {
-                val fullDateFormat = SimpleDateFormat("dd MMM HH:mm", Locale.getDefault())
-                fullDateFormat.format(Date(timestamp))
-            }
+
+        try {
+            // 2. IMPORTANTE: Instanciamos el SimpleDateFormat DENTRO de la función.
+            // Esto evita errores de concurrencia (crash) cuando la app y el servicio lo usan a la vez.
+            val dateFormat = SimpleDateFormat(DATE_PATTERN, Locale.getDefault())
+
+            // Opcional: Forzar zona horaria de Perú si el celular estuviera en otra zona
+            // dateFormat.timeZone = TimeZone.getTimeZone("America/Lima")
+
+            return dateFormat.format(Date(timestamp))
+        } catch (e: Exception) {
+            return "Error formato"
         }
     }
-    
-    fun extractMonto(text: String): String {
-        val montoRegex = """S/\s*(\d+\.?\d*)""".toRegex()
-        val match = montoRegex.find(text)
-        return if (match != null) {
-            "S/ ${match.groupValues[1]}"
-        } else {
-            "S/ --"
-        }
+
+    /**
+     * Extrae solo la hora para mostrar en listas simples (ej: "14:30")
+     */
+    fun getOnlyTime(timestamp: Long): String {
+        if (timestamp <= 0L) return "--:--"
+        val sdf = SimpleDateFormat("HH:mm", Locale.getDefault())
+        return sdf.format(Date(timestamp))
     }
 }

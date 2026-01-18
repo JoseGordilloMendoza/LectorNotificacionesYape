@@ -22,16 +22,15 @@ data class YapeNotificationRaw(
      * Escapa las comas y comillas para evitar problemas con el formato CSV
      */
     fun toCsvLine(): String {
+        val fechaLegible = com.example.lectoryape.utils.DateFormatter.formatTimestamp(timestamp)
         return buildString {
-            append(timestamp)
+            append(fechaLegible)
             append(",")
             append(escapeCsv(name))
             append(",")
             append("%.2f".format(java.util.Locale.US, amount))
             append(",")
             append(escapeCsv(securityCode))
-            append(",")
-            append(notificationId)
         }
     }
     
@@ -48,6 +47,6 @@ data class YapeNotificationRaw(
         /**
          * Encabezado del archivo CSV
          */
-        const val CSV_HEADER = "timestamp,name,amount,securityCode,notificationId"
+        const val CSV_HEADER = "fecha,nombre,monto,codigoSeguridad"
     }
 }

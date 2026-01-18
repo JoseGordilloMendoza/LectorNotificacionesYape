@@ -2,7 +2,7 @@ package com.example.lectoryape.firebase
 
 import android.content.Context
 import android.util.Log
-import com.example.lectoryape.auth.GoogleAuthManager
+import com.example.lectoryape.auth.AccountPickerManager
 import com.example.lectoryape.models.YapeNotificationRaw
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.tasks.await
@@ -18,34 +18,36 @@ class FirebaseUploader(private val context: Context) {
     }
     
     private val firestore: FirebaseFirestore = FirebaseFirestore.getInstance()
-    private val authManager = GoogleAuthManager(context)
+    private val accountManager = AccountPickerManager(context)
     
     /**
      * Sube una notificación a Firestore
      */
     suspend fun uploadNotification(notification: YapeNotificationRaw): Boolean {
         return try {
-            val userEmail = authManager.getUserEmail() ?: "unknown"
-
-            // CORREGIDO: Usamos los campos reales de tu nuevo modelo
+            // Obtener email del usuario logueado
+            val userEmail = accountManager.getUserEmail() ?: "unknown"
+            val fechaFormateada = com.example.lectoryape.utils.DateFormatter.formatTimestamp(notification.timestamp)
+            
+            // Crear documento para Firestore
             val data = hashMapOf(
-                "title" to notification.title, // Agregado recientemente
-                "name" to notification.name,
-                "amount" to notification.amount,
-                "securityCode" to notification.securityCode,
-                "timestamp" to notification.timestamp,
+                "timestamp" to fechaFormateada,
+                "title" to notification.title,
+                "text" to notification.name,
+                "bigText" to notification.amount,
                 "notificationId" to notification.notificationId,
                 "userEmail" to userEmail,
                 "uploadedAt" to System.currentTimeMillis()
             )
-
+            
+            // Subir a Firestore
             firestore.collection(COLLECTION_NAME)
                 .add(data)
                 .await()
-
+            
             Log.d(TAG, "✅ Notificación subida exitosamente a Firebase")
             true
-
+            
         } catch (e: Exception) {
             Log.e(TAG, "❌ Error al subir a Firebase: ${e.message}", e)
             false
@@ -89,7 +91,7 @@ class FirebaseUploader(private val context: Context) {
      */
     suspend fun getUserYapeos(): List<Map<String, Any>> {
         return try {
-            val userEmail = authManager.getUserEmail()
+            val userEmail = accountManager.getUserEmail()
             Log.d(TAG, "🔍 Buscando yapeos para email: $userEmail")
             
             if (userEmail == null) {
