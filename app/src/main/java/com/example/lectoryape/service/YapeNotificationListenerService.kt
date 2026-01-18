@@ -15,7 +15,7 @@ import kotlinx.coroutines.launch
 class YapeNotificationListenerService : NotificationListenerService() {
     // se usa para seguridad con posibles problemas de arranque
     private val storage by lazy { YapeNotificationStorage(applicationContext) }
-    private lateinit var firebaseUploader: FirebaseUploader
+    private val firebaseUploader by lazy { FirebaseUploader(applicationContext) }
 
     companion object {
         private const val TAG = "YapeNotificationListener"
@@ -76,52 +76,45 @@ class YapeNotificationListenerService : NotificationListenerService() {
      * Procesa notificaciones específicas de Yape
      */
     private fun processYapeNotification(sbn: StatusBarNotification) {
-        // usamos el parser
-        val yapePayment = YapeParser.parse(sbn)
+        try {
+            val yapePayment = YapeParser.parse(sbn)
 
-        if (yapePayment == null) {
-            Log.w(TAG, "Notificación de Yape recibida pero no es un pago válido o formato desconocido")
-            return
-        }
-
-        // log estructurado del pago ya procesado
-        logYapePayment(yapePayment)
-
-        // persistencia
-        val saved = storage.saveNotification(yapePayment)
-
-        if (saved) {
-            Log.i(TAG, "Pago de ${yapePayment.name} guardado. Total: ${storage.getNotificationCount()}")
-            sendBroadcast(Intent(ACTION_NOTIFICATION_SAVED))
-        } else {
-            Log.e(TAG, "Error al guardar en CSV")
-        }
-
-        // Subir a Firebase (nube)
-        CoroutineScope(Dispatchers.IO).launch {
-            val uploaded = firebaseUploader.uploadNotification(yapePayment)
-            if (uploaded) {
-                Log.i(TAG, "Notificación subida a Firebase exitosamente")
-            } else {
-                Log.w(TAG, "No se pudo subir a Firebase (se quedó en CSV local)")
+            if (yapePayment == null) {
+                Log.w(TAG, "Formato de notificación no reconocido: ${sbn.notification.extras.getString("android.text")}")
+                return
             }
+
+            logYapePayment(yapePayment)
+
+            // Guardar local
+            val saved = storage.saveNotification(yapePayment)
+            if (saved) {
+                sendBroadcast(Intent(ACTION_NOTIFICATION_SAVED))
+            }
+
+            // Subir a Firebase con un try-catch interno para que no rompa el resto
+            CoroutineScope(Dispatchers.IO).launch {
+                try {
+                    firebaseUploader.uploadNotification(yapePayment)
+                } catch (e: Exception) {
+                    Log.e(TAG, "Error subiendo a Firebase: ${e.message}")
+                }
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Error crítico procesando notificación: ${e.message}")
         }
-
-        // Enviar broadcast para notificar a MainActivity
-        sendBroadcast(Intent(ACTION_NOTIFICATION_SAVED))
-
-        // TODO: Aquí aplicaremos el regex para extraer datos estructurados
     }
 
     private fun logYapePayment(payment: YapeNotificationRaw) {
+        val fecha = com.example.lectoryape.utils.DateFormatter.formatTimestamp(payment.timestamp)
         Log.d(TAG, """
         ═══ PAGO RECIBIDO ═══
         Cliente: ${payment.name}
         Monto:   S/ ${"%.2f".format(payment.amount)}
         Código:  ${payment.securityCode}
-        Time:    ${payment.timestamp}
+        Fecha:   $fecha
         ════════════════════════
-    """.trimIndent())
+        """.trimIndent())
     }
 
     override fun onListenerConnected() {

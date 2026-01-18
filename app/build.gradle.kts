@@ -55,25 +55,23 @@ android {
 }
 
 dependencies {
+
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.appcompat)
     implementation(libs.material)
     implementation(libs.androidx.activity)
     implementation(libs.androidx.constraintlayout)
-
-    // Esto asegura que todas las librerías de Firebase sean compatibles entre sí
-    implementation(platform("com.google.firebase:firebase-bom:32.7.0"))
-
-    // El BoM pone la versión correcta. La versión moderna ya incluye soporte Kotlin
-    implementation("com.google.firebase:firebase-firestore")
-
-    // 3. Google Sign-In
-    implementation("com.google.android.gms:play-services-auth:21.0.0")
-
-    // 4. Coroutines
+    
+    // Google Auth Base (para Account Picker - SIN OAuth)
+    implementation("com.google.android.gms:play-services-auth-base:18.0.10")
+    
+    // Firebase Firestore (con versión explícita)
+    implementation("com.google.firebase:firebase-firestore-ktx:24.10.0")
+    
+    // Coroutines
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.7.3")
-
+    
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
