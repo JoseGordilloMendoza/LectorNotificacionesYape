@@ -21,7 +21,7 @@ import androidx.core.view.isVisible
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.lectoryape.adapters.YapeosAdapter
-import com.example.lectoryape.auth.GoogleAuthManager
+import com.example.lectoryape.auth.AccountPickerManager
 import com.example.lectoryape.databinding.ActivityMainBinding
 import com.example.lectoryape.firebase.FirebaseUploader
 import com.example.lectoryape.models.YapeDisplayItem
@@ -40,7 +40,7 @@ class MainActivity : AppCompatActivity() {
     
     private lateinit var binding: ActivityMainBinding
     private lateinit var storage: YapeNotificationStorage
-    private lateinit var authManager: GoogleAuthManager
+    private lateinit var accountManager: AccountPickerManager
     private lateinit var firebaseUploader: FirebaseUploader
     private lateinit var yapeosAdapter: YapeosAdapter
     
@@ -62,8 +62,8 @@ class MainActivity : AppCompatActivity() {
         AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO)
         
         //user esta logged
-        authManager = GoogleAuthManager(this)
-        if (!authManager.isSignedIn()) {
+        accountManager = AccountPickerManager(this)
+        if (!accountManager.isSignedIn()) {
             navigateToLogin()
             return
         }
@@ -110,7 +110,7 @@ class MainActivity : AppCompatActivity() {
     }
     
     private fun displayUserInfo() {
-        val userEmail = authManager.getUserEmail() ?: "Usuario"
+        val userEmail = accountManager.getUserEmail() ?: "Usuario"
         supportActionBar?.subtitle = userEmail
     }
     
@@ -127,16 +127,13 @@ class MainActivity : AppCompatActivity() {
     }
     
     private fun performLogout() {
-        lifecycleScope.launch {
-            try {
-                authManager.signOut {
-                    Toast.makeText(this@MainActivity, "Sesión cerrada", Toast.LENGTH_SHORT).show()
-                    navigateToLogin()
-                }
-            } catch (e: Exception) {
-                android.util.Log.e("MainActivity", "Error al cerrar sesión: ${e.message}", e)
-                Toast.makeText(this@MainActivity, "Error al cerrar sesión", Toast.LENGTH_SHORT).show()
-            }
+        try {
+            accountManager.signOut()
+            Toast.makeText(this@MainActivity, "Sesión cerrada", Toast.LENGTH_SHORT).show()
+            navigateToLogin()
+        } catch (e: Exception) {
+            android.util.Log.e("MainActivity", "Error al cerrar sesión: ${e.message}", e)
+            Toast.makeText(this@MainActivity, "Error al cerrar sesión", Toast.LENGTH_SHORT).show()
         }
     }
     
