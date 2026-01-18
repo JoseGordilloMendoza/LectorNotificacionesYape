@@ -2,7 +2,7 @@ package com.example.lectoryape.firebase
 
 import android.content.Context
 import android.util.Log
-import com.example.lectoryape.auth.GoogleAuthManager
+import com.example.lectoryape.auth.AccountPickerManager
 import com.example.lectoryape.models.YapeNotificationRaw
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.tasks.await
@@ -18,7 +18,7 @@ class FirebaseUploader(private val context: Context) {
     }
     
     private val firestore: FirebaseFirestore = FirebaseFirestore.getInstance()
-    private val authManager = GoogleAuthManager(context)
+    private val accountManager = AccountPickerManager(context)
     
     /**
      * Sube una notificación a Firestore
@@ -26,14 +26,15 @@ class FirebaseUploader(private val context: Context) {
     suspend fun uploadNotification(notification: YapeNotificationRaw): Boolean {
         return try {
             // Obtener email del usuario logueado
-            val userEmail = authManager.getUserEmail() ?: "unknown"
+            val userEmail = accountManager.getUserEmail() ?: "unknown"
+            val fechaFormateada = com.example.lectoryape.utils.DateFormatter.formatTimestamp(notification.timestamp)
             
             // Crear documento para Firestore
             val data = hashMapOf(
-                "timestamp" to notification.timestamp,
+                "timestamp" to fechaFormateada,
                 "title" to notification.title,
-                "text" to notification.text,
-                "bigText" to notification.bigText,
+                "text" to notification.name,
+                "bigText" to notification.amount,
                 "notificationId" to notification.notificationId,
                 "userEmail" to userEmail,
                 "uploadedAt" to System.currentTimeMillis()
@@ -90,7 +91,7 @@ class FirebaseUploader(private val context: Context) {
      */
     suspend fun getUserYapeos(): List<Map<String, Any>> {
         return try {
-            val userEmail = authManager.getUserEmail()
+            val userEmail = accountManager.getUserEmail()
             Log.d(TAG, "🔍 Buscando yapeos para email: $userEmail")
             
             if (userEmail == null) {

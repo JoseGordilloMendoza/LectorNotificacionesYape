@@ -4,16 +4,17 @@ package com.example.lectoryape.models
  * Representa una notificación de Yape capturada en su formato crudo (sin parsear)
  * 
  * @property timestamp Momento en que se recibió la notificación (epoch millis)
- * @property title Título de la notificación (ej: "Confirmación de Pago")
- * @property text Texto principal de la notificación
- * @property bigText Texto expandido (usualmente igual que text)
+ * @property name El nombre del emisor del pago
+ * @property amount Monto de la operación
+ * @property securityCode Representa el codigo de seguridad entre operaciones de yape a yape
  * @property notificationId ID único de la notificación en el sistema
  */
 data class YapeNotificationRaw(
-    val timestamp: Long,
     val title: String,
-    val text: String,
-    val bigText: String,
+    val name: String,
+    val amount: Double,
+    val timestamp: Long,
+    val securityCode: String,
     val notificationId: Int
 ) {
     /**
@@ -21,16 +22,15 @@ data class YapeNotificationRaw(
      * Escapa las comas y comillas para evitar problemas con el formato CSV
      */
     fun toCsvLine(): String {
+        val fechaLegible = com.example.lectoryape.utils.DateFormatter.formatTimestamp(timestamp)
         return buildString {
-            append(timestamp)
+            append(fechaLegible)
             append(",")
-            append(escapeCsv(title))
+            append(escapeCsv(name))
             append(",")
-            append(escapeCsv(text))
+            append("%.2f".format(java.util.Locale.US, amount))
             append(",")
-            append(escapeCsv(bigText))
-            append(",")
-            append(notificationId)
+            append(escapeCsv(securityCode))
         }
     }
     
@@ -47,6 +47,6 @@ data class YapeNotificationRaw(
         /**
          * Encabezado del archivo CSV
          */
-        const val CSV_HEADER = "timestamp,title,text,bigText,notificationId"
+        const val CSV_HEADER = "fecha,nombre,monto,codigoSeguridad"
     }
 }
