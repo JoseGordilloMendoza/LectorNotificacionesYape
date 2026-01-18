@@ -403,20 +403,22 @@ class MainActivity : AppCompatActivity() {
                 val displayItems = yapeos.map { data ->
                     val timestamp = data["timestamp"] as? Long ?: 0L
 
-                    // CORRECCIÓN: Usamos los campos nuevos del modelo
-                    val name = data["name"] as? String ?: "Desconocido"
-                    val amount = when(val a = data["amount"]) {
+                    // Leer campos del Firebase (estructura del compañero)
+                    val name = data["text"] as? String ?: "Desconocido"  // text = nombre
+                    val amount = when(val a = data["bigText"]) {          // bigText = monto
                         is Double -> a
-                        is Long -> a.toDouble() // Firebase a veces guarda números como Long
+                        is Long -> a.toDouble()
                         else -> 0.0
                     }
                     val title = data["title"] as? String ?: "Yape"
+                    // timestamp ya es String formateado, lo usamos directamente para fecha
+                    val fechaStr = data["timestamp"] as? String ?: ""
 
                     YapeDisplayItem(
-                        monto = amount.toString(),
-                        texto = "$title de $name", // Armamos un texto visual
-                        fecha = com.example.lectoryape.utils.DateFormatter.formatTimestamp(timestamp),
-                        timestamp = timestamp
+                        monto = "S/ %.2f".format(java.util.Locale.US, amount), // Formatear como moneda
+                        texto = "$name te envió un pago",  // Texto descriptivo
+                        fecha = fechaStr,  // Ya viene formateado de Firebase
+                        timestamp = 0L  // No necesitamos ordenar, Firebase ya lo hace
                     )
                 }
 

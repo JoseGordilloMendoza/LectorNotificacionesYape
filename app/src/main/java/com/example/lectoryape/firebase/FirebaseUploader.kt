@@ -29,7 +29,7 @@ class FirebaseUploader(private val context: Context) {
             val userEmail = accountManager.getUserEmail() ?: "unknown"
             val fechaFormateada = com.example.lectoryape.utils.DateFormatter.formatTimestamp(notification.timestamp)
             
-            // Crear documento para Firestore
+            // Crear documento para Firestore (estructura del compañero)
             val data = hashMapOf(
                 "timestamp" to fechaFormateada,
                 "title" to notification.title,
