@@ -8,6 +8,7 @@ import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
+import android.service.notification.NotificationListenerService
 import android.view.Menu
 import android.view.MenuItem
 import android.widget.Toast
@@ -27,78 +28,80 @@ import com.example.lectoryape.firebase.FirebaseUploader
 import com.example.lectoryape.models.YapeDisplayItem
 import com.example.lectoryape.service.YapeNotificationListenerService
 import com.example.lectoryape.storage.YapeNotificationStorage
+import java.io.File
+import java.util.Locale
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import java.io.File
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
-
 
 class MainActivity : AppCompatActivity() {
-    
+
     private lateinit var binding: ActivityMainBinding
     private lateinit var storage: YapeNotificationStorage
     private lateinit var accountManager: AccountPickerManager
     private lateinit var firebaseUploader: FirebaseUploader
     private lateinit var yapeosAdapter: YapeosAdapter
-    
+
     // BroadcastReceiver para escuchar cuando se guardan notificaciones
-    private val notificationReceiver = object : BroadcastReceiver() {
-        override fun onReceive(context: Context?, intent: Intent?) {
-            // Actualizar contador
-            updateNotificationCount()
-            
-            // Recargar lista de yapeos automáticamente
-            loadYapeos()
-        }
-    }
-    
+    private val notificationReceiver =
+            object : BroadcastReceiver() {
+                override fun onReceive(context: Context?, intent: Intent?) {
+                    // Actualizar contador
+                    updateNotificationCount()
+
+                    // Recargar lista de yapeos automáticamente
+                    loadYapeos()
+                }
+            }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        
+
         // modo claro, al pepo se le distorsiona xd
         AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO)
-        
-        //user esta logged
+
+        // user esta logged
         accountManager = AccountPickerManager(this)
         if (!accountManager.isSignedIn()) {
             navigateToLogin()
             return
         }
-        
+
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
-        
+
         storage = YapeNotificationStorage(this)
         firebaseUploader = FirebaseUploader(this)
-        
+
         setupUI()
-        
+
         try {
             android.util.Log.d("MainActivity", "🔧 Inicializando RecyclerView...")
             setupRecyclerView()
         } catch (e: Exception) {
-            android.util.Log.e("MainActivity", "❌ Error al inicializar RecyclerView: ${e.message}", e)
+            android.util.Log.e(
+                    "MainActivity",
+                    "❌ Error al inicializar RecyclerView: ${e.message}",
+                    e
+            )
         }
-        
+
         displayUserInfo()
         checkNotificationPermission()
         updateNotificationCount()
-        
+
         try {
             loadYapeos()
         } catch (e: Exception) {
             android.util.Log.e("MainActivity", "❌ Error al cargar yapeos: ${e.message}", e)
         }
     }
-    
+
     override fun onCreateOptionsMenu(menu: Menu?): Boolean {
         menuInflater.inflate(R.menu.main_menu, menu)
         return true
     }
-    
+
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         return when (item.itemId) {
             R.id.action_logout -> {
@@ -108,24 +111,22 @@ class MainActivity : AppCompatActivity() {
             else -> super.onOptionsItemSelected(item)
         }
     }
-    
+
     private fun displayUserInfo() {
         val userEmail = accountManager.getUserEmail() ?: "Usuario"
         supportActionBar?.subtitle = userEmail
     }
-    
+
     private fun logout() {
         // Mostrar confirmación antes de cerrar sesión
         AlertDialog.Builder(this)
-            .setTitle("Cerrar sesión")
-            .setMessage("¿Estás seguro que deseas cerrar sesión?")
-            .setPositiveButton("Sí") { _, _ ->
-                performLogout()
-            }
-            .setNegativeButton("Cancelar", null)
-            .show()
+                .setTitle("Cerrar sesión")
+                .setMessage("¿Estás seguro que deseas cerrar sesión?")
+                .setPositiveButton("Sí") { _, _ -> performLogout() }
+                .setNegativeButton("Cancelar", null)
+                .show()
     }
-    
+
     private fun performLogout() {
         try {
             accountManager.signOut()
@@ -136,25 +137,30 @@ class MainActivity : AppCompatActivity() {
             Toast.makeText(this@MainActivity, "Error al cerrar sesión", Toast.LENGTH_SHORT).show()
         }
     }
-    
+
     private fun navigateToLogin() {
         val intent = Intent(this, LoginActivity::class.java)
         startActivity(intent)
         finish()
     }
-    
+
     @RequiresApi(Build.VERSION_CODES.O)
     override fun onResume() {
         super.onResume()
         // Registrar el receiver para escuchar broadcasts
         val filter = IntentFilter(YapeNotificationListenerService.ACTION_NOTIFICATION_SAVED)
         registerReceiver(notificationReceiver, filter, RECEIVER_NOT_EXPORTED)
-        
+
         // Verificar permiso cada vez que la app regresa al foreground
         checkNotificationPermission()
         updateNotificationCount()
+
+        // Forzar reconexión del servicio si está habilitado (API 24+)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N && isNotificationServiceEnabled()) {
+            requestServiceRebindIfNeeded()
+        }
     }
-    
+
     override fun onPause() {
         super.onPause()
         // Desregistrar el receiver para evitar memory leaks
@@ -164,53 +170,39 @@ class MainActivity : AppCompatActivity() {
             // Receiver no estaba registrado, ignorar
         }
     }
-    
+
     private fun setupUI() {
         // Botón de logout
-        binding.btnLogout.setOnClickListener {
-            logout()
-        }
-        
+        binding.btnLogout.setOnClickListener { logout() }
+
         // Botón para abrir configuración de notificaciones
-        binding.btnEnableNotifications.setOnClickListener {
-            openNotificationSettings()
-        }
-        
+        binding.btnEnableNotifications.setOnClickListener { openNotificationSettings() }
+
         // Botón para exportar CSV
-        binding.btnExportCsv.setOnClickListener {
-            exportCsv()
-        }
-        
+        binding.btnExportCsv.setOnClickListener { exportCsv() }
+
         // Botón para ver CSV
-        binding.btnViewCsv.setOnClickListener {
-            viewCsv()
-        }
-        
+        binding.btnViewCsv.setOnClickListener { viewCsv() }
+
         // Botón para limpiar datos
-        binding.btnClearData.setOnClickListener {
-            confirmClearData()
-        }
+        binding.btnClearData.setOnClickListener { confirmClearData() }
     }
-    
-    /**
-     * Actualiza el contador de notificaciones en la UI (desde Firebase)
-     */
+
+    /** Actualiza el contador de notificaciones en la UI (desde Firebase) */
     private fun updateNotificationCount() {
         lifecycleScope.launch {
             try {
                 // Obtener conteo desde Firebase (filtrado por usuario)
-                val count = withContext(Dispatchers.IO) {
-                    firebaseUploader.getUserYapeos().size
-                }
-                
+                val count = withContext(Dispatchers.IO) { firebaseUploader.getUserYapeos().size }
+
                 binding.tvTransactionCount.text = count.toString()
-                
+
                 // Mostrar/ocultar botones según haya datos
                 val hasData = count > 0
                 binding.btnExportCsv.isEnabled = hasData
                 binding.btnViewCsv.isEnabled = hasData
                 binding.btnClearData.isEnabled = hasData
-                
+
                 if (!hasData) {
                     binding.btnExportCsv.alpha = 0.5f
                     binding.btnViewCsv.alpha = 0.5f
@@ -220,8 +212,11 @@ class MainActivity : AppCompatActivity() {
                     binding.btnViewCsv.alpha = 1.0f
                     binding.btnClearData.alpha = 1.0f
                 }
-                
-                android.util.Log.d("MainActivity", "📊 Contador actualizado: $count yapeos en Firebase")
+
+                android.util.Log.d(
+                        "MainActivity",
+                        "📊 Contador actualizado: $count yapeos en Firebase"
+                )
             } catch (e: Exception) {
                 android.util.Log.e("MainActivity", "Error al actualizar contador: ${e.message}", e)
                 // Fallback a conteo local si falla Firebase
@@ -230,85 +225,75 @@ class MainActivity : AppCompatActivity() {
             }
         }
     }
-    
-    /**
-     * Exporta el CSV usando el diálogo de compartir de Android
-     */
+
+    /** Exporta el CSV usando el diálogo de compartir de Android */
     private fun exportCsv() {
         if (!storage.fileExists()) {
             Toast.makeText(this, "No hay datos para exportar", Toast.LENGTH_SHORT).show()
             return
         }
-        
+
         try {
             val csvFile = File(storage.getFilePath())
-            val uri: Uri = FileProvider.getUriForFile(
-                this,
-                "${packageName}.fileprovider",
-                csvFile
-            )
-            
-            val shareIntent = Intent(Intent.ACTION_SEND).apply {
-                type = "text/csv"
-                putExtra(Intent.EXTRA_STREAM, uri)
-                putExtra(Intent.EXTRA_SUBJECT, "Notificaciones de Yape")
-                putExtra(Intent.EXTRA_TEXT, "Archivo CSV con ${storage.getNotificationCount()} notificaciones de Yape")
-                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-            }
-            
+            val uri: Uri = FileProvider.getUriForFile(this, "${packageName}.fileprovider", csvFile)
+
+            val shareIntent =
+                    Intent(Intent.ACTION_SEND).apply {
+                        type = "text/csv"
+                        putExtra(Intent.EXTRA_STREAM, uri)
+                        putExtra(Intent.EXTRA_SUBJECT, "Notificaciones de Yape")
+                        putExtra(
+                                Intent.EXTRA_TEXT,
+                                "Archivo CSV con ${storage.getNotificationCount()} notificaciones de Yape"
+                        )
+                        addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                    }
+
             startActivity(Intent.createChooser(shareIntent, "Exportar CSV"))
-            
         } catch (e: Exception) {
             Toast.makeText(this, "Error al exportar: ${e.message}", Toast.LENGTH_SHORT).show()
         }
     }
-    
-    /**
-     * Muestra el contenido del CSV en un diálogo
-     */
+
+    /** Muestra el contenido del CSV en un diálogo */
     private fun viewCsv() {
         if (!storage.fileExists()) {
             Toast.makeText(this, "No hay datos para ver", Toast.LENGTH_SHORT).show()
             return
         }
-        
+
         val content = storage.getAllNotificationsAsText()
         val lines = content.lines()
-        
+
         // Mostrar solo las primeras líneas para no saturar la UI
-        val preview = if (lines.size > 20) {
-            lines.take(20).joinToString("\n") + "\n\n... (${lines.size - 20} líneas más)"
-        } else {
-            content
-        }
-        
+        val preview =
+                if (lines.size > 20) {
+                    lines.take(20).joinToString("\n") + "\n\n... (${lines.size - 20} líneas más)"
+                } else {
+                    content
+                }
+
         AlertDialog.Builder(this)
-            .setTitle("📄 Contenido del CSV (${storage.getNotificationCount()} notificaciones)")
-            .setMessage(preview)
-            .setPositiveButton("Cerrar", null)
-            .setNeutralButton("Exportar") { _, _ ->
-                exportCsv()
-            }
-            .show()
+                .setTitle("📄 Contenido del CSV (${storage.getNotificationCount()} notificaciones)")
+                .setMessage(preview)
+                .setPositiveButton("Cerrar", null)
+                .setNeutralButton("Exportar") { _, _ -> exportCsv() }
+                .show()
     }
-    
-    /**
-     * Confirma antes de limpiar todos los datos
-     */
+
+    /** Confirma antes de limpiar todos los datos */
     private fun confirmClearData() {
         AlertDialog.Builder(this)
-            .setTitle("⚠️ Confirmar")
-            .setMessage("¿Estás seguro de eliminar todas las ${storage.getNotificationCount()} notificaciones guardadas?\n\nEsta acción no se puede deshacer.")
-            .setPositiveButton("Eliminar") { _, _ ->
-                clearData()
-            }
-            .setNegativeButton("Cancelar", null)
-            .show()
+                .setTitle("⚠️ Confirmar")
+                .setMessage(
+                        "¿Estás seguro de eliminar todas las ${storage.getNotificationCount()} notificaciones guardadas?\n\nEsta acción no se puede deshacer."
+                )
+                .setPositiveButton("Eliminar") { _, _ -> clearData() }
+                .setNegativeButton("Cancelar", null)
+                .show()
     }
-    
-    /**
-     * Elimina todos los datos
-     */
+
+    /** Elimina todos los datos */
     private fun clearData() {
         val success = storage.clearAll()
         if (success) {
@@ -318,18 +303,16 @@ class MainActivity : AppCompatActivity() {
             Toast.makeText(this, "❌ Error al eliminar datos", Toast.LENGTH_SHORT).show()
         }
     }
-    
-    /**
-     * Verifica si el servicio de notificaciones está habilitado
-     */
+
+    /** Verifica si el servicio de notificaciones está habilitado */
     private fun checkNotificationPermission() {
         val isEnabled = isNotificationServiceEnabled()
-        
+
         if (isEnabled) {
             // if para cuando este habilitado
             binding.tvPermissionStatus.text = "Servicio con permiso "
-            binding.statusIndicator.backgroundTintList = 
-                ContextCompat.getColorStateList(this, android.R.color.holo_green_dark)
+            binding.statusIndicator.backgroundTintList =
+                    ContextCompat.getColorStateList(this, android.R.color.holo_green_dark)
             binding.btnEnableNotifications.isEnabled = false
             binding.btnEnableNotifications.text = "Acceso Habilitado"
             binding.btnEnableNotifications.alpha = 0.6f
@@ -337,50 +320,53 @@ class MainActivity : AppCompatActivity() {
         } else {
             // if para cuando no este habilitado
             binding.tvPermissionStatus.text = "Servicio sin permiso "
-            binding.statusIndicator.backgroundTintList = 
-                ContextCompat.getColorStateList(this, android.R.color.holo_red_dark)
+            binding.statusIndicator.backgroundTintList =
+                    ContextCompat.getColorStateList(this, android.R.color.holo_red_dark)
             binding.btnEnableNotifications.isEnabled = true
             binding.btnEnableNotifications.text = "⚙Habilitar Acceso a Notificaciones"
             binding.btnEnableNotifications.alpha = 1.0f
         }
     }
-    
-    /**
-     * Verifica si nuestro NotificationListenerService está habilitado
-     */
+
+    /** Verifica si nuestro NotificationListenerService está habilitado */
     private fun isNotificationServiceEnabled(): Boolean {
-        val enabledListeners = Settings.Secure.getString(
-            contentResolver,
-            "enabled_notification_listeners"
-        )
-        
+        val enabledListeners =
+                Settings.Secure.getString(contentResolver, "enabled_notification_listeners")
+
         if (enabledListeners.isNullOrEmpty()) {
             return false
         }
-        
+
         val packageName = packageName
         return enabledListeners.contains(packageName)
     }
-    
-    /**
-     abrir los settings
-     */
+
+    /** abrir los settings */
     private fun openNotificationSettings() {
         try {
             val intent = Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS)
             startActivity(intent)
-            
-            Toast.makeText(
-                this,
-                "Busca 'Lector Yape' y activa el switch",
-                Toast.LENGTH_LONG
-            ).show()
+
+            Toast.makeText(this, "Busca 'Lector Yape' y activa el switch", Toast.LENGTH_LONG).show()
         } catch (e: Exception) {
-            Toast.makeText(
-                this,
-                "Error al abrir configuración: ${e.message}",
-                Toast.LENGTH_SHORT
-            ).show()
+            Toast.makeText(this, "Error al abrir configuración: ${e.message}", Toast.LENGTH_SHORT)
+                    .show()
+        }
+    }
+
+    /**
+     * Solicita la reconexión del servicio de notificaciones si está desconectado Esto asegura que
+     * el servicio esté activo cada vez que el usuario abre la app
+     */
+    @RequiresApi(Build.VERSION_CODES.N)
+    private fun requestServiceRebindIfNeeded() {
+        try {
+            val componentName =
+                    android.content.ComponentName(this, YapeNotificationListenerService::class.java)
+            NotificationListenerService.requestRebind(componentName)
+            android.util.Log.d("MainActivity", "🔄 Solicitud de reconexión del servicio enviada")
+        } catch (e: Exception) {
+            android.util.Log.e("MainActivity", "❌ Error al solicitar reconexión: ${e.message}", e)
         }
     }
 
@@ -396,35 +382,38 @@ class MainActivity : AppCompatActivity() {
             try {
                 android.util.Log.d("MainActivity", "🔍 Iniciando carga de yapeos...")
 
-                val yapeos = withContext(Dispatchers.IO) {
-                    firebaseUploader.getUserYapeos()
-                }
+                val yapeos = withContext(Dispatchers.IO) { firebaseUploader.getUserYapeos() }
 
-                val displayItems = yapeos.map { data ->
-                    val timestamp = data["timestamp"] as? Long ?: 0L
+                val displayItems =
+                        yapeos.map { data ->
+                            val timestamp = data["timestamp"] as? Long ?: 0L
 
-                    // Leer campos del Firebase (estructura del compañero)
-                    val name = data["text"] as? String ?: "Desconocido"  // text = nombre
-                    val amount = when(val a = data["bigText"]) {          // bigText = monto
-                        is Double -> a
-                        is Long -> a.toDouble()
-                        else -> 0.0
-                    }
-                    val title = data["title"] as? String ?: "Yape"
-                    // timestamp ya es String formateado, lo usamos directamente para fecha
-                    val fechaStr = data["timestamp"] as? String ?: ""
+                            // Leer campos del Firebase (estructura del compañero)
+                            val name = data["text"] as? String ?: "Desconocido" // text = nombre
+                            val amount =
+                                    when (val a = data["bigText"]) { // bigText = monto
+                                        is Double -> a
+                                        is Long -> a.toDouble()
+                                        else -> 0.0
+                                    }
+                            val title = data["title"] as? String ?: "Yape"
+                            // timestamp ya es String formateado, lo usamos directamente para fecha
+                            val fechaStr = data["timestamp"] as? String ?: ""
 
-                    YapeDisplayItem(
-                        monto = "S/ %.2f".format(java.util.Locale.US, amount), // Formatear como moneda
-                        texto = "$name te envió un pago",  // Texto descriptivo
-                        fecha = fechaStr,  // Ya viene formateado de Firebase
-                        timestamp = 0L  // No necesitamos ordenar, Firebase ya lo hace
-                    )
-                }
+                            YapeDisplayItem(
+                                    monto =
+                                            "S/ %.2f".format(
+                                                    java.util.Locale.US,
+                                                    amount
+                                            ), // Formatear como moneda
+                                    texto = "$name te envió un pago", // Texto descriptivo
+                                    fecha = fechaStr, // Ya viene formateado de Firebase
+                                    timestamp = 0L // No necesitamos ordenar, Firebase ya lo hace
+                            )
+                        }
 
                 yapeosAdapter.updateYapeos(displayItems)
                 android.util.Log.d("MainActivity", "✅ RecyclerView actualizado")
-
             } catch (e: Exception) {
                 android.util.Log.e("MainActivity", "❌ Error al cargar yapeos: ${e.message}", e)
             }
