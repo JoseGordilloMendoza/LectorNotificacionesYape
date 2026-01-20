@@ -1,9 +1,12 @@
 package com.example.lectoryape.service
 
+import android.content.ComponentName
 import android.content.Intent
+import android.os.Build
 import android.service.notification.NotificationListenerService
 import android.service.notification.StatusBarNotification
 import android.util.Log
+import androidx.annotation.RequiresApi
 import com.example.lectoryape.firebase.FirebaseUploader
 import com.example.lectoryape.models.YapeNotificationRaw
 import com.example.lectoryape.storage.YapeNotificationStorage
@@ -119,12 +122,25 @@ class YapeNotificationListenerService : NotificationListenerService() {
 
     override fun onListenerConnected() {
         super.onListenerConnected()
-        Log.d(TAG, "Servicio de notificaciones CONECTADO")
-        Log.d(TAG, "Archivo CSV: ${storage.getFilePath()}")
+        Log.i(TAG, "✅ Servicio de notificaciones CONECTADO y listo para recibir pagos")
+        Log.d(TAG, "📁 Archivo CSV: ${storage.getFilePath()}")
+        Log.d(TAG, "📱 Versión Android: ${Build.VERSION.SDK_INT} (${Build.VERSION.RELEASE})")
     }
     
     override fun onListenerDisconnected() {
         super.onListenerDisconnected()
-        Log.d(TAG, "Servicio de notificaciones DESCONECTADO")
+        Log.w(TAG, "⚠️ Servicio de notificaciones DESCONECTADO - Intentando reconectar...")
+        
+        // Intentar reconectar automáticamente el servicio (API 24+)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+            try {
+                requestRebind(ComponentName(this, YapeNotificationListenerService::class.java))
+                Log.d(TAG, "✅ Solicitud de reconexión enviada")
+            } catch (e: Exception) {
+                Log.e(TAG, "❌ Error al solicitar reconexión: ${e.message}")
+            }
+        } else {
+            Log.w(TAG, "⚠️ requestRebind() requiere Android 7.0+ (API 24)")
+        }
     }
 }
