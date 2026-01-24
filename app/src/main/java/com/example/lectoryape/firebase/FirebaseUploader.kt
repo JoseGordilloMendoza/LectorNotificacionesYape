@@ -21,23 +21,30 @@ class FirebaseUploader(private val context: Context) {
     private val accountManager = AccountPickerManager(context)
     
     /**
-     * Sube una notificación a Firestore
+     * Sube una notificación a Firestore con estructura simplificada
      */
     suspend fun uploadNotification(notification: YapeNotificationRaw): Boolean {
         return try {
             // Obtener email del usuario logueado
             val userEmail = accountManager.getUserEmail() ?: "unknown"
-            val fechaFormateada = com.example.lectoryape.utils.DateFormatter.formatTimestamp(notification.timestamp)
             
-            // Crear documento para Firestore (estructura del compañero)
+            // Formatear fecha y hora por separado
+            val fechaHora = com.example.lectoryape.utils.DateFormatter.formatTimestamp(notification.timestamp)
+            
+            // Separar fecha y hora usando el formato: "21 de enero de 2026 a las 11:49:35 p.m. UTC-5"
+            val partes = fechaHora.split(" a las ")
+            val fecha = partes.getOrNull(0) ?: fechaHora
+            val hora = partes.getOrNull(1) ?: ""
+            
+            // Crear documento simplificado para Firestore
             val data = hashMapOf(
-                "timestamp" to fechaFormateada,
-                "title" to notification.title,
-                "text" to notification.name,
-                "bigText" to notification.amount,
-                "notificationId" to notification.notificationId,
-                "userEmail" to userEmail,
-                "uploadedAt" to System.currentTimeMillis()
+                "senderName" to notification.name,       // Nombre del emisor
+                "amount" to notification.amount,         // Monto
+                "fecha" to fecha,                        // Ej: "21 de enero de 2026"
+                "hora" to hora,                          // Ej: "11:49:35 p.m. UTC-5"
+                "status" to false,                        // Boolean: true = procesado
+                "timestamp" to notification.timestamp,   // Timestamp original (para ordenar)
+                "userEmail" to userEmail                 // Email del usuario
             )
             
             // Subir a Firestore
@@ -45,7 +52,7 @@ class FirebaseUploader(private val context: Context) {
                 .add(data)
                 .await()
             
-            Log.d(TAG, "✅ Notificación subida exitosamente a Firebase")
+            Log.d(TAG, "✅ Notificación subida a Firebase: ${notification.name} - S/${notification.amount}")
             true
             
         } catch (e: Exception) {
@@ -102,18 +109,17 @@ class FirebaseUploader(private val context: Context) {
             Log.d(TAG, "📡 Ejecutando consulta a Firebase...")
             val snapshot = firestore.collection(COLLECTION_NAME)
                 .whereEqualTo("userEmail", userEmail)
-                // .orderBy("timestamp", com.google.firebase.firestore.Query.Direction.DESCENDING) // Index required
                 .limit(100) // Limitar a últimos 100 yapeos
                 .get()
                 .await()
             
             Log.d(TAG, "📊 Documentos encontrados: ${snapshot.size()}")
-            snapshot.documents.forEach { doc ->
-                Log.d(TAG, "  - Doc ID: ${doc.id}, Email: ${doc.data?.get("userEmail")}")
-            }
             
             val results = snapshot.documents.mapNotNull { doc ->
                 doc.data
+            }.sortedByDescending { data ->
+                // Ordenar por timestamp descendente (más recientes primero)
+                (data["timestamp"] as? Long) ?: 0L
             }
             
             Log.d(TAG, "✅ Retornando ${results.size} yapeos")
