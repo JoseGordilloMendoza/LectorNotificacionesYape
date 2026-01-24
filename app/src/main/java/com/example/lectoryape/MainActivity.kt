@@ -41,6 +41,11 @@ class MainActivity : AppCompatActivity() {
     private lateinit var accountManager: AccountPickerManager
     private lateinit var firebaseUploader: FirebaseUploader
     private lateinit var yapeosAdapter: YapeosAdapter
+    
+    // SharedPreferences para guardar la preferencia del switch
+    private val prefs by lazy {
+        getSharedPreferences("yape_listener_prefs", Context.MODE_PRIVATE)
+    }
 
     // BroadcastReceiver para escuchar cuando se guardan notificaciones
     private val notificationReceiver =
@@ -89,6 +94,7 @@ class MainActivity : AppCompatActivity() {
         displayUserInfo()
         checkNotificationPermission()
         updateNotificationCount()
+        setupNotificationSwitch()
 
         try {
             loadYapeos()
@@ -186,6 +192,39 @@ class MainActivity : AppCompatActivity() {
 
         // Botón para limpiar datos
         binding.btnClearData.setOnClickListener { confirmClearData() }
+    }
+    
+    /**
+     * Configura el switch de notificación persistente / servicio activo
+     */
+    private fun setupNotificationSwitch() {
+        // Cargar preferencia guardada (por defecto true)
+        val showNotification = prefs.getBoolean(
+            YapeNotificationListenerService.PREF_SHOW_NOTIFICATION,
+            true
+        )
+        binding.switchPersistentNotification.isChecked = showNotification
+        
+        // Listener para cuando el usuario cambie el switch
+        binding.switchPersistentNotification.setOnCheckedChangeListener { _, isChecked ->
+            // Guardar preferencia
+            prefs.edit()
+                .putBoolean(YapeNotificationListenerService.PREF_SHOW_NOTIFICATION, isChecked)
+                .apply()
+            
+            // Enviar broadcast al servicio para que actualice INMEDIATAMENTE
+            sendBroadcast(Intent(YapeNotificationListenerService.ACTION_TOGGLE_NOTIFICATION))
+            
+            // Feedback al usuario
+            val message = if (isChecked) {
+                "✅ Servicio activado - Escuchando notificaciones"
+            } else {
+                "🔕 Servicio desactivado - No se capturarán notificaciones"
+            }
+            Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
+            
+            android.util.Log.d("MainActivity", "Servicio ${if (isChecked) "activado" else "desactivado"}")
+        }
     }
 
     /** Actualiza el contador de notificaciones en la UI (desde Firebase) */
