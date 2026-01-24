@@ -4,6 +4,12 @@
 
     <!-- Permiso para usar internet (Firebase) -->
     <uses-permission android:name="android.permission.INTERNET" />
+    
+    <!-- Permiso para Foreground Service (Android 9.0+) -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    
+    <!-- Permiso para mostrar notificaciones (Android 13+) -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
     <application
         android:allowBackup="true"
