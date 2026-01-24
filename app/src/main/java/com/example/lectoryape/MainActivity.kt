@@ -95,11 +95,36 @@ class MainActivity : AppCompatActivity() {
         checkNotificationPermission()
         updateNotificationCount()
         setupNotificationSwitch()
+        
+        // Verificar y solicitar exención de optimización de batería
+        checkBatteryOptimization()
 
         try {
             loadYapeos()
         } catch (e: Exception) {
             android.util.Log.e("MainActivity", "❌ Error al cargar yapeos: ${e.message}", e)
+        }
+    }
+    
+    /**
+     * Verifica si la app está exenta de optimización de batería
+     * Si no lo está, muestra un diálogo para solicitarlo
+     */
+    private fun checkBatteryOptimization() {
+        if (!com.example.lectoryape.utils.BatteryOptimizationHelper.isIgnoringBatteryOptimizations(this)) {
+            android.util.Log.w("MainActivity", "⚠️ App NO está exenta de optimización de batería")
+            
+            // Mostrar diálogo explicativo
+            AlertDialog.Builder(this)
+                .setTitle("⚡ Optimización de Batería")
+                .setMessage("Para garantizar que SIEMPRE se capturen las notificaciones, es necesario desactivar la optimización de batería.\n\n¿Deseas desactivarla ahora?")
+                .setPositiveButton("Sí") { _, _ ->
+                    com.example.lectoryape.utils.BatteryOptimizationHelper.requestIgnoreBatteryOptimizations(this)
+                }
+                .setNegativeButton("Después", null)
+                .show()
+        } else {
+            android.util.Log.d("MainActivity", "✅ App exenta de optimización de batería")
         }
     }
 
@@ -198,32 +223,36 @@ class MainActivity : AppCompatActivity() {
      * Configura el switch de notificación persistente / servicio activo
      */
     private fun setupNotificationSwitch() {
-        // Cargar preferencia guardada (por defecto true)
+        // Cargar preferencia guardada (por defecto FALSE - servicio desactivado)
         val showNotification = prefs.getBoolean(
             YapeNotificationListenerService.PREF_SHOW_NOTIFICATION,
-            true
+            false  // ← Cambiado de true a false
         )
         binding.switchPersistentNotification.isChecked = showNotification
         
         // Listener para cuando el usuario cambie el switch
         binding.switchPersistentNotification.setOnCheckedChangeListener { _, isChecked ->
-            // Guardar preferencia
-            prefs.edit()
-                .putBoolean(YapeNotificationListenerService.PREF_SHOW_NOTIFICATION, isChecked)
-                .apply()
-            
-            // Enviar broadcast al servicio para que actualice INMEDIATAMENTE
-            sendBroadcast(Intent(YapeNotificationListenerService.ACTION_TOGGLE_NOTIFICATION))
-            
-            // Feedback al usuario
+            // Feedback INMEDIATO al usuario (antes de hacer nada)
             val message = if (isChecked) {
-                "✅ Servicio activado - Escuchando notificaciones"
+                "✅ Activando servicio..."
             } else {
-                "🔕 Servicio desactivado - No se capturarán notificaciones"
+                "🔕 Desactivando servicio..."
             }
             Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
             
-            android.util.Log.d("MainActivity", "Servicio ${if (isChecked) "activado" else "desactivado"}")
+            // Guardar preferencia en segundo plano
+            lifecycleScope.launch(Dispatchers.IO) {
+                prefs.edit()
+                    .putBoolean(YapeNotificationListenerService.PREF_SHOW_NOTIFICATION, isChecked)
+                    .commit()  // commit() es síncrono pero en IO thread
+                
+                // Enviar broadcast al servicio
+                withContext(Dispatchers.Main) {
+                    sendBroadcast(Intent(YapeNotificationListenerService.ACTION_TOGGLE_NOTIFICATION))
+                }
+            }
+            
+            android.util.Log.d("MainActivity", "Switch cambiado: ${if (isChecked) "ON" else "OFF"}")
         }
     }
 
@@ -425,34 +454,33 @@ class MainActivity : AppCompatActivity() {
 
                 val displayItems =
                         yapeos.map { data ->
-                            val timestamp = data["timestamp"] as? Long ?: 0L
-
-                            // Leer campos del Firebase (estructura del compañero)
-                            val name = data["text"] as? String ?: "Desconocido" // text = nombre
-                            val amount =
-                                    when (val a = data["bigText"]) { // bigText = monto
-                                        is Double -> a
-                                        is Long -> a.toDouble()
-                                        else -> 0.0
-                                    }
-                            val title = data["title"] as? String ?: "Yape"
-                            // timestamp ya es String formateado, lo usamos directamente para fecha
-                            val fechaStr = data["timestamp"] as? String ?: ""
+                            // Leer campos de la estructura simplificada
+                            val senderName = data["senderName"] as? String ?: "Desconocido"
+                            val amount = when (val a = data["amount"]) {
+                                is Double -> a
+                                is Long -> a.toDouble()
+                                else -> 0.0
+                            }
+                            val fecha = data["fecha"] as? String ?: ""
+                            val hora = data["hora"] as? String ?: ""
+                            
+                            // Combinar fecha y hora para mostrar
+                            val fechaCompleta = if (hora.isNotEmpty()) {
+                                "$fecha a las $hora"
+                            } else {
+                                fecha
+                            }
 
                             YapeDisplayItem(
-                                    monto =
-                                            "S/ %.2f".format(
-                                                    java.util.Locale.US,
-                                                    amount
-                                            ), // Formatear como moneda
-                                    texto = "$name te envió un pago", // Texto descriptivo
-                                    fecha = fechaStr, // Ya viene formateado de Firebase
-                                    timestamp = 0L // No necesitamos ordenar, Firebase ya lo hace
+                                    monto = "S/ %.2f".format(java.util.Locale.US, amount),
+                                    texto = "$senderName te envió un pago",
+                                    fecha = fechaCompleta,
+                                    timestamp = (data["timestamp"] as? Long) ?: 0L
                             )
                         }
 
                 yapeosAdapter.updateYapeos(displayItems)
-                android.util.Log.d("MainActivity", "✅ RecyclerView actualizado")
+                android.util.Log.d("MainActivity", "✅ RecyclerView actualizado con ${displayItems.size} yapeos")
             } catch (e: Exception) {
                 android.util.Log.e("MainActivity", "❌ Error al cargar yapeos: ${e.message}", e)
             }

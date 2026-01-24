@@ -7,6 +7,7 @@ import android.content.Intent
 import android.content.IntentFilter
 import android.content.SharedPreferences
 import android.os.Build
+import android.os.PowerManager
 import android.service.notification.NotificationListenerService
 import android.service.notification.StatusBarNotification
 import android.util.Log
@@ -31,6 +32,9 @@ class YapeNotificationListenerService : NotificationListenerService() {
         applicationContext.getSharedPreferences("yape_listener_prefs", Context.MODE_PRIVATE)
     }
     
+    // Wake lock para mantener el servicio activo
+    private var wakeLock: PowerManager.WakeLock? = null
+    
     // BroadcastReceiver para escuchar cuando el usuario cambia el switch
     private val toggleReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
@@ -39,10 +43,13 @@ class YapeNotificationListenerService : NotificationListenerService() {
                     val isEnabled = isServiceEnabled()
                     Log.d(TAG, "📻 Broadcast recibido - Switch: ${if (isEnabled) "ON" else "OFF"}")
                     
+                    // Ejecutar en segundo plano para no bloquear UI
                     if (isEnabled) {
+                        acquireWakeLock()
                         startForegroundService()
                     } else {
                         stopForegroundService()
+                        releaseWakeLock()
                     }
                 }
             }
@@ -52,7 +59,7 @@ class YapeNotificationListenerService : NotificationListenerService() {
     companion object {
         private const val TAG = "YapeNotificationListener"
         // debuggeo xd
-        private const val DEBUG_MODE = false  // ← Cambiado para testing
+        private const val DEBUG_MODE = true  // ← ACTIVADO para debugging
         
         // pakeich de yape xd
         private const val YAPE_PACKAGE = "com.bcp.innovacxion.yapeapp"
@@ -210,8 +217,10 @@ class YapeNotificationListenerService : NotificationListenerService() {
             // Verificar si el usuario tiene el servicio habilitado
             if (isServiceEnabled()) {
                 startForegroundService()
+                acquireWakeLock()
                 Log.d(TAG, "🔔 Foreground service iniciado - Escuchando notificaciones")
             } else {
+                releaseWakeLock()
                 Log.d(TAG, "🔕 Servicio deshabilitado por el usuario - No se escucharán notificaciones")
             }
         } catch (e: Exception) {
@@ -223,7 +232,7 @@ class YapeNotificationListenerService : NotificationListenerService() {
      * Verifica si el servicio está habilitado por el usuario (switch ON)
      */
     private fun isServiceEnabled(): Boolean {
-        return prefs.getBoolean(PREF_SHOW_NOTIFICATION, true)
+        return prefs.getBoolean(PREF_SHOW_NOTIFICATION, false)  // Default: OFF
     }
     
     /**
@@ -267,8 +276,52 @@ class YapeNotificationListenerService : NotificationListenerService() {
     fun toggleNotification(show: Boolean) {
         if (show) {
             startForegroundService()
+            acquireWakeLock()
         } else {
             stopForegroundService()
+            releaseWakeLock()
         }
+    }
+    
+    /**
+     * Adquiere un wake lock para mantener el CPU activo
+     */
+    private fun acquireWakeLock() {
+        try {
+            if (wakeLock == null) {
+                val powerManager = getSystemService(Context.POWER_SERVICE) as PowerManager
+                wakeLock = powerManager.newWakeLock(
+                    PowerManager.PARTIAL_WAKE_LOCK,
+                    "YapeLector::NotificationWakeLock"
+                )
+                wakeLock?.setReferenceCounted(false)
+            }
+            
+            if (wakeLock?.isHeld == false) {
+                wakeLock?.acquire()
+                Log.d(TAG, "🔋 Wake lock adquirido")
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "❌ Error al adquirir wake lock: ${e.message}", e)
+        }
+    }
+    
+    /**
+     * Libera el wake lock
+     */
+    private fun releaseWakeLock() {
+        try {
+            if (wakeLock?.isHeld == true) {
+                wakeLock?.release()
+                Log.d(TAG, "🔌 Wake lock liberado")
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "❌ Error al liberar wake lock: ${e.message}", e)
+        }
+    }
+    
+    override fun onDestroy() {
+        super.onDestroy()
+        releaseWakeLock()
     }
 }

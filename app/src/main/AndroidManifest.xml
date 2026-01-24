@@ -10,6 +10,12 @@
     
     <!-- Permiso para mostrar notificaciones (Android 13+) -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    
+    <!-- Permiso para solicitar exención de optimización de batería (Android 6.0+) -->
+    <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
+    
+    <!-- Permiso para mantener el dispositivo despierto (evita que se duerma) -->
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
 
     <application
         android:allowBackup="true"
