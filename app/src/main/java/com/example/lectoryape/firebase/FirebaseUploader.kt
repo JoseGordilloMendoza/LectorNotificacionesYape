@@ -28,20 +28,23 @@ class FirebaseUploader(private val context: Context) {
             // Obtener email del usuario logueado
             val userEmail = accountManager.getUserEmail() ?: "unknown"
             
-            // Formatear fecha y hora por separado
-            val fechaHora = com.example.lectoryape.utils.DateFormatter.formatTimestamp(notification.timestamp)
+            // Formatear fecha y hora usando DateFormatters específicos
+            val dateDate = java.util.Date(notification.timestamp)
             
-            // Separar fecha y hora usando el formato: "21 de enero de 2026 a las 11:49:35 p.m. UTC-5"
-            val partes = fechaHora.split(" a las ")
-            val fecha = partes.getOrNull(0) ?: fechaHora
-            val hora = partes.getOrNull(1) ?: ""
+            // Formato Fecha: "2026-01-25"
+            val sdfFecha = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.getDefault())
+            val fecha = sdfFecha.format(dateDate)
+            
+            // Formato Hora: "12:30:45"
+            val sdfHora = java.text.SimpleDateFormat("HH:mm:ss", java.util.Locale.getDefault())
+            val hora = sdfHora.format(dateDate)
             
             // Crear documento simplificado para Firestore
             val data = hashMapOf(
                 "senderName" to notification.name,       // Nombre del emisor
                 "amount" to notification.amount,         // Monto
-                "fecha" to fecha,                        // Ej: "21 de enero de 2026"
-                "hora" to hora,                          // Ej: "11:49:35 p.m. UTC-5"
+                "fecha" to fecha,                        // Ej: "2026-01-25"
+                "hora" to hora,                          // Ej: "12:30:45"
                 "status" to false,                        // Boolean: true = procesado
                 "timestamp" to notification.timestamp,   // Timestamp original (para ordenar)
                 "userEmail" to userEmail                 // Email del usuario
