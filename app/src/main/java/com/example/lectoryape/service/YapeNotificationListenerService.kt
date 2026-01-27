@@ -205,6 +205,13 @@ class YapeNotificationListenerService : NotificationListenerService() {
             Log.w(TAG, "⚠️ requestRebind() requiere Android 7.0+ (API 24)")
         }
     }
+
+    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        super.onStartCommand(intent, flags, startId)
+        // START_STICKY: Si el sistema mata el servicio, lo recrea automáticamente
+        Log.d(TAG, "🔄 onStartCommand ejecutado - Servicio marcado como STICKY")
+        return START_STICKY
+    }
     
     /**
      * Inicializa el servicio como Foreground Service si el usuario lo tiene habilitado
