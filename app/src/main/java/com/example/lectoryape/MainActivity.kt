@@ -97,7 +97,7 @@ class MainActivity : AppCompatActivity() {
         setupNotificationSwitch()
         
         // Verificar y solicitar exención de optimización de batería
-        // checkBatteryOptimization() // LE PUSE Comentario temporalmente por si se necesita más tarde
+        checkBatteryOptimization()
 
         try {
             loadYapeos()
@@ -106,7 +106,6 @@ class MainActivity : AppCompatActivity() {
         }
     }
     
-    /* Comentado temporalmente por solicitud del usuario
     /**
      * Verifica si la app está exenta de optimización de batería
      * Si no lo está, muestra un diálogo para solicitarlo
@@ -128,7 +127,6 @@ class MainActivity : AppCompatActivity() {
             android.util.Log.d("MainActivity", "✅ App exenta de optimización de batería")
         }
     }
-    */
 
     override fun onCreateOptionsMenu(menu: Menu?): Boolean {
         menuInflater.inflate(R.menu.main_menu, menu)
