@@ -246,9 +246,20 @@ class MainActivity : AppCompatActivity() {
                     .putBoolean(YapeNotificationListenerService.PREF_SHOW_NOTIFICATION, isChecked)
                     .commit()  // commit() es síncrono pero en IO thread
                 
-                // Enviar broadcast al servicio
+                // Enviar broadcast al servicio (si está vivo lo recibirá)
                 withContext(Dispatchers.Main) {
                     sendBroadcast(Intent(YapeNotificationListenerService.ACTION_TOGGLE_NOTIFICATION))
+                    
+                    // CRÍTICO: Si el servicio estaba muerto, el broadcast NO lo despierta.
+                    // Forzamos un Rebind del sistema para resucitarlo.
+                    if (isChecked && Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                        try {
+                            requestServiceRebindIfNeeded()
+                            android.util.Log.d("MainActivity", "⚡ Switch ON: Forzando Rebind del servicio")
+                        } catch (e: Exception) {
+                            android.util.Log.e("MainActivity", "Error intentando Rebind: ${e.message}")
+                        }
+                    }
                 }
             }
             
