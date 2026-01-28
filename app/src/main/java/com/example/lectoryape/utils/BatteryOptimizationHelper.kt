@@ -34,33 +34,87 @@ object BatteryOptimizationHelper {
     /**
      * Solicita al usuario que desactive la optimización de batería para esta app
      */
-    fun requestIgnoreBatteryOptimizations(context: Context) {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) {
-            return
+    /**
+     * Intenta abrir la configuración de inicio automático (AutoStart)
+     * Crítico para Xiaomi/Redmi/Poco
+     */
+    fun checkAndRequestAutoStart(context: Context) {
+        val manufacturer = Build.MANUFACTURER.lowercase()
+        if ("xiaomi" in manufacturer || "redmi" in manufacturer || "poco" in manufacturer) {
+            try {
+                // Intent específico para gestión de AutoStart en MIUI
+                val intent = Intent()
+                intent.component = android.content.ComponentName(
+                    "com.miui.securitycenter",
+                    "com.miui.permcenter.autostart.AutoStartManagementActivity"
+                )
+                intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                context.startActivity(intent)
+                Log.d(TAG, "🚀 Abriendo AutoStart para Xiaomi")
+            } catch (e: Exception) {
+                Log.e(TAG, "No se pudo abrir AutoStart Xiaomi: ${e.message}")
+                // Fallback a configuración de aplicación
+                openAppDetails(context)
+            }
         }
-        
-        if (isIgnoringBatteryOptimizations(context)) {
-            Log.d(TAG, "✅ Ya está exento de optimización de batería")
-            return
-        }
-        
+    }
+
+    /**
+     * Abre la pantalla de detalles de la app
+     */
+    private fun openAppDetails(context: Context) {
         try {
-            val intent = Intent().apply {
-                action = Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS
+            val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS)
+            intent.data = Uri.parse("package:${context.packageName}")
+            intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
+            context.startActivity(intent)
+        } catch (e: Exception) {
+            Log.e(TAG, "Error abriendo detalles de app: ${e.message}")
+        }
+    }
+
+    /**
+     * Versión mejorada que intenta evitar el dialog confuso en Xiaomi
+     */
+    fun requestIgnoreBatteryOptimizations(context: Context) {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) return
+        
+        if (isIgnoringBatteryOptimizations(context)) return
+
+        // Para Xiaomi, a veces es mejor ir directo a la configuración de batería
+        // que usar el intent estándar que muestra el dialog confuso
+        val manufacturer = Build.MANUFACTURER.lowercase()
+        if ("xiaomi" in manufacturer || "redmi" in manufacturer) {
+            try {
+                // Intent para "Ahorro de batería de aplicaciones" en MIUI
+                val intent = Intent()
+                intent.component = android.content.ComponentName(
+                    "com.miui.securitycenter",
+                    "com.miui.powercenter.PowerSettings"
+                )
+                intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                context.startActivity(intent)
+                return
+            } catch (e: Exception) {
+                // Fallback al estándar
+            }
+        }
+
+        // Método estándar Android
+        try {
+            val intent = Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS).apply {
                 data = Uri.parse("package:${context.packageName}")
                 flags = Intent.FLAG_ACTIVITY_NEW_TASK
             }
             context.startActivity(intent)
-            Log.d(TAG, "📱 Solicitando exención de optimización de batería")
         } catch (e: Exception) {
-            Log.e(TAG, "❌ Error al solicitar exención: ${e.message}", e)
-            // Fallback: abrir configuración general de batería
+            // Último recurso: Configuración general
             openBatterySettings(context)
         }
     }
-    
+
     /**
-     * Abre la configuración de optimización de batería
+     * Abre la configuración de optimización de batería (Genérico)
      */
     private fun openBatterySettings(context: Context) {
         try {
@@ -70,6 +124,7 @@ object BatteryOptimizationHelper {
             context.startActivity(intent)
         } catch (e: Exception) {
             Log.e(TAG, "❌ Error al abrir configuración: ${e.message}", e)
+            openAppDetails(context)
         }
     }
 }
