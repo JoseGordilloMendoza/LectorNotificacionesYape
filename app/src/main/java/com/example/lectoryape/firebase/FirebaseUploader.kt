@@ -2,7 +2,7 @@ package com.example.lectoryape.firebase
 
 import android.content.Context
 import android.util.Log
-import com.example.lectoryape.auth.AccountPickerManager
+import com.example.lectoryape.auth.FirebaseAuthManager
 import com.example.lectoryape.models.YapeNotificationRaw
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.tasks.await
@@ -18,15 +18,17 @@ class FirebaseUploader(private val context: Context) {
     }
     
     private val firestore: FirebaseFirestore = FirebaseFirestore.getInstance()
-    private val accountManager = AccountPickerManager(context)
+    private val authManager = FirebaseAuthManager(context)
     
     /**
      * Sube una notificación a Firestore con estructura simplificada
      */
     suspend fun uploadNotification(notification: YapeNotificationRaw): Boolean {
         return try {
-            // Obtener email del usuario logueado
-            val userEmail = accountManager.getUserEmail() ?: "unknown"
+            // Obtener usuario logueado REAL
+            val currentUser = authManager.getCurrentUser()
+            val userEmail = currentUser?.email ?: "unknown"
+            val userId = currentUser?.uid ?: "unknown"
             
             // Formatear fecha y hora usando DateFormatters específicos
             val dateDate = java.util.Date(notification.timestamp)
@@ -45,9 +47,10 @@ class FirebaseUploader(private val context: Context) {
                 "amount" to notification.amount,         // Monto
                 "fecha" to fecha,                        // Ej: "2026-01-25"
                 "hora" to hora,                          // Ej: "12:30:45"
-                "status" to false,                        // Boolean: true = procesado
+                "status" to false,                       // Boolean: true = procesado
                 "timestamp" to notification.timestamp,   // Timestamp original (para ordenar)
-                "userEmail" to userEmail                 // Email del usuario
+                "userEmail" to userEmail,                // Email del usuario (Legacy/Compatibilidad)
+                "userId" to userId                       // UID Único y Seguro (Nuevo estándar)
             )
             
             // Subir a Firestore
@@ -81,55 +84,104 @@ class FirebaseUploader(private val context: Context) {
     }
     
     /**
-     * Obtiene el número total de notificaciones en Firestore
-     */
-    suspend fun getTotalCount(): Int {
-        return try {
-            val snapshot = firestore.collection(COLLECTION_NAME)
-                .get()
-                .await()
-            
-            snapshot.size()
-        } catch (e: Exception) {
-            Log.e(TAG, "Error al obtener conteo: ${e.message}", e)
-            0
-        }
-    }
-    
-    /**
      * Obtiene los yapeos del usuario actual (filtrado por email)
      */
     suspend fun getUserYapeos(): List<Map<String, Any>> {
         return try {
-            val userEmail = accountManager.getUserEmail()
+            val userEmail = authManager.getUserEmail()?.lowercase() // Normalizar a minúsculas
             Log.d(TAG, "🔍 Buscando yapeos para email: $userEmail")
             
             if (userEmail == null) {
-                Log.w(TAG, "⚠️ No hay usuario logueado")
+                Log.w(TAG, "⚠️ No hay usuario logueado o email es nulo")
                 return emptyList()
             }
             
-            Log.d(TAG, "📡 Ejecutando consulta a Firebase...")
+            // Nota: Podríamos filtrar por userId también, pero mantenemos email por compatibilidad
             val snapshot = firestore.collection(COLLECTION_NAME)
                 .whereEqualTo("userEmail", userEmail)
-                .limit(100) // Limitar a últimos 100 yapeos
+                .limit(100)
                 .get()
                 .await()
             
-            Log.d(TAG, "📊 Documentos encontrados: ${snapshot.size()}")
+            Log.d(TAG, "📊 Documentos encontrados: ${snapshot.size()} para query userEmail='$userEmail'")
+            
+            if (snapshot.isEmpty) {
+                Log.w(TAG, "⚠️ La consulta devolvió 0 documentos. Verifica mayúsculas/minúsculas en Firebase.")
+            }
             
             val results = snapshot.documents.mapNotNull { doc ->
+                // Loguear estructura del primer documento para debug
+                // if (snapshot.documents.indexOf(doc) == 0) Log.d(TAG, "Estructura doc ejemplo: ${doc.data}")
                 doc.data
             }.sortedByDescending { data ->
-                // Ordenar por timestamp descendente (más recientes primero)
                 (data["timestamp"] as? Long) ?: 0L
             }
             
-            Log.d(TAG, "✅ Retornando ${results.size} yapeos")
             results
         } catch (e: Exception) {
             Log.e(TAG, "❌ Error al obtener yapeos del usuario: ${e.message}", e)
             emptyList()
+        }
+    }
+    
+    /**
+     * Guarda o actualiza el usuario en la colección 'users'
+     */
+    /**
+     * Guarda o actualiza el usuario en la colección 'users'
+     * Sincronizado con la lógica de la Web App (Vue.js):
+     * - Si no existe: Crea perfil con rol 'owner' y Suscripción 'trial' (7 días).
+     * - Si existe: Solo actualiza lastLogin.
+     */
+    /**
+     * Guarda el usuario en 'users' SOLO si es la primera vez (Igual que la web)
+     */
+    suspend fun saveUser(user: com.google.firebase.auth.FirebaseUser) {
+        try {
+            val userRef = firestore.collection("users").document(user.uid)
+            val snapshot = userRef.get().await()
+            
+            if (!snapshot.exists()) {
+                // Generar fechas en formato ISO 8601 (Compatibilidad Web)
+                val now = java.util.Date()
+                val isoFormat = java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", java.util.Locale.US)
+                isoFormat.timeZone = java.util.TimeZone.getTimeZone("UTC")
+                
+                val createdAt = isoFormat.format(now)
+                
+                // Calcular fin de prueba (7 días)
+                val calendar = java.util.Calendar.getInstance()
+                calendar.time = now
+                calendar.add(java.util.Calendar.DAY_OF_YEAR, 7)
+                val trialEndDate = isoFormat.format(calendar.time)
+
+                // Estructura EXACTA al código Vue.js proporcionado
+                val subscription = hashMapOf(
+                    "isActive" to true,
+                    "status" to "trial",
+                    "planName" to "Prueba Gratuita",
+                    "limitSucursales" to 3,
+                    "trialEndDate" to trialEndDate,
+                    "nextBillingDate" to null
+                )
+
+                val userData = hashMapOf(
+                    "email" to (user.email ?: ""),
+                    "displayName" to (user.displayName ?: "Usuario"),
+                    "role" to "owner",
+                    "createdAt" to createdAt,
+                    "subscription" to subscription
+                )
+
+                userRef.set(userData).await()
+                Log.d(TAG, "✅ Perfil NUEVO creado (Sync Web): ${user.email}")
+                
+            } else {
+                Log.d(TAG, "ℹ️ El usuario ya existe, no se toca nada (Sync Web): ${user.email}")
+            }
+            
+        } catch (e: Exception) {
+            Log.e(TAG, "❌ Error al sincronizar usuario: ${e.message}", e)
         }
     }
 }
