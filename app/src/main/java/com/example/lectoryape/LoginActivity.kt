@@ -8,16 +8,22 @@ import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.view.isVisible
-import com.example.lectoryape.auth.AccountPickerManager
+import androidx.lifecycle.lifecycleScope
+import com.example.lectoryape.auth.FirebaseAuthManager
 import com.example.lectoryape.databinding.ActivityLoginBinding
+import kotlinx.coroutines.launch
+
+import com.example.lectoryape.firebase.FirebaseUploader // Importar
 
 class LoginActivity : AppCompatActivity() {
     
     private lateinit var binding: ActivityLoginBinding
-    private lateinit var accountManager: AccountPickerManager
+    private lateinit var authManager: FirebaseAuthManager
+    private lateinit var firebaseUploader: FirebaseUploader // Nuevo
     
     companion object {
         private const val TAG = "LoginActivity"
+        private const val RC_SIGN_IN = 9001
     }
     
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -29,10 +35,13 @@ class LoginActivity : AppCompatActivity() {
         binding = ActivityLoginBinding.inflate(layoutInflater)
         setContentView(binding.root)
         
-        accountManager = AccountPickerManager(this)
+        // Inicializar managers
+        authManager = FirebaseAuthManager(this)
+        firebaseUploader = FirebaseUploader(this) // Nuevo
         
-        // Si ya está logueado, ir directo a MainActivity
-        if (accountManager.isSignedIn()) {
+        // Si ya está logueado en Firebase, ir directo a MainActivity
+        if (authManager.isSignedIn()) {
+            Log.d(TAG, "Usuario ya logueado: ${authManager.getUserEmail()}")
             navigateToMain()
             return
         }
@@ -42,67 +51,66 @@ class LoginActivity : AppCompatActivity() {
     
     private fun setupUI() {
         binding.btnGoogleSignIn.setOnClickListener {
-            showAccountPicker()
+            performGoogleSignIn()
         }
     }
     
     /**
-     * Muestra el selector de cuentas Google
+     * Inicia el flujo de Google Sign-In REAL
      */
-    private fun showAccountPicker() {
+    private fun performGoogleSignIn() {
         showLoading(true)
-        
-        try {
-            accountManager.showAccountPicker(this)
-        } catch (e: Exception) {
-            Log.e(TAG, "Error al mostrar Account Picker: ${e.message}", e)
-            showLoading(false)
-            Toast.makeText(this, "Error: ${e.message}", Toast.LENGTH_SHORT).show()
-        }
+        val signInIntent = authManager.getSignInIntent()
+        startActivityForResult(signInIntent, RC_SIGN_IN)
     }
     
     /**
-     * Maneja el resultado del Account Picker
+     * Maneja el resultado del Google Sign-In
      */
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
         
-        if (requestCode == AccountPickerManager.REQUEST_CODE_PICK_ACCOUNT) {
-            showLoading(false)
-            
-            if (resultCode == Activity.RESULT_OK) {
-                val email = accountManager.handleAccountPickerResult(data)
-                
-                if (email != null) {
-                    Log.d(TAG, "Cuenta seleccionada: $email")
-                    Toast.makeText(this, "✅ Sesión iniciada: $email", Toast.LENGTH_SHORT).show()
-                    navigateToMain()
-                } else {
-                    Toast.makeText(this, "No se pudo obtener el email", Toast.LENGTH_SHORT).show()
+        if (requestCode == RC_SIGN_IN) {
+            // Usar coroutine para operaciones asíncronas de Firebase
+            lifecycleScope.launch {
+                try {
+                    val user = authManager.firebaseAuthWithGoogle(data)
+                    
+                    if (user != null) {
+                        Log.d(TAG, "Login exitoso: ${user.email} (${user.uid})")
+                        
+                        // Guardar usuario en Firestore
+                        binding.tvStatus.text = "Guardando perfil..."
+                        firebaseUploader.saveUser(user)
+                        
+                        Toast.makeText(this@LoginActivity, "✅ Bienvenido ${user.displayName}", Toast.LENGTH_SHORT).show()
+                        navigateToMain()
+                    } else {
+                        showLoading(false)
+                        Toast.makeText(this@LoginActivity, "Fallo en autenticación", Toast.LENGTH_SHORT).show()
+                    }
+                } catch (e: Exception) {
+                    Log.e(TAG, "Error en login", e)
+                    showLoading(false)
+                    Toast.makeText(this@LoginActivity, "Error: ${e.message}", Toast.LENGTH_LONG).show()
                 }
-            } else {
-                // Usuario canceló
-                Log.d(TAG, "Selección de cuenta cancelada")
-                Toast.makeText(this, "Selección cancelada", Toast.LENGTH_SHORT).show()
             }
         }
     }
     
-    /**
-     * Navega a MainActivity
-     */
     private fun navigateToMain() {
         val intent = Intent(this, MainActivity::class.java)
         startActivity(intent)
         finish()
     }
     
-    /**
-     * Muestra/oculta el indicador de carga
-     */
     private fun showLoading(loading: Boolean) {
         binding.progressBar.isVisible = loading
         binding.tvStatus.isVisible = loading
         binding.btnGoogleSignIn.isEnabled = !loading
+        
+        if (loading) {
+            binding.tvStatus.text = "Conectando con Google..."
+        }
     }
 }

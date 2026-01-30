@@ -22,7 +22,7 @@ import androidx.core.view.isVisible
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.lectoryape.adapters.YapeosAdapter
-import com.example.lectoryape.auth.AccountPickerManager
+import com.example.lectoryape.auth.FirebaseAuthManager
 import com.example.lectoryape.databinding.ActivityMainBinding
 import com.example.lectoryape.firebase.FirebaseUploader
 import com.example.lectoryape.models.YapeDisplayItem
@@ -38,7 +38,7 @@ class MainActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityMainBinding
     private lateinit var storage: YapeNotificationStorage
-    private lateinit var accountManager: AccountPickerManager
+    private lateinit var authManager: FirebaseAuthManager
     private lateinit var firebaseUploader: FirebaseUploader
     private lateinit var yapeosAdapter: YapeosAdapter
     
@@ -65,9 +65,10 @@ class MainActivity : AppCompatActivity() {
         // modo claro, al pepo se le distorsiona xd
         AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO)
 
-        // user esta logged
-        accountManager = AccountPickerManager(this)
-        if (!accountManager.isSignedIn()) {
+        // Verificar Login
+        authManager = FirebaseAuthManager(this)
+        
+        if (!authManager.isSignedIn()) {
             navigateToLogin()
             return
         }
@@ -109,18 +110,12 @@ class MainActivity : AppCompatActivity() {
     /**
      * Verifica si la app está exenta de optimización de batería
      * Si no lo está, muestra un diálogo para solicitarlo
-     */
-    /**
-     * Verifica si la app está exenta de optimización de batería
-     * Si no lo está, muestra un diálogo para solicitarlo
      * También verifica AutoStart en Xiaomi
      */
     private fun checkBatteryOptimization() {
         // 1. Verificar AutoStart en Xiaomi (Es lo más crítico y oculto)
         val manufacturer = Build.MANUFACTURER.lowercase()
         if ("xiaomi" in manufacturer || "redmi" in manufacturer) {
-            // Nota: No podemos saber programmaticamente si AutoStart está on/off con certeza
-            // Así que lo mostramos una vez o sugerimos al usuario
             val prefs = getSharedPreferences("miui_settings", Context.MODE_PRIVATE)
             val alreadyAsked = prefs.getBoolean("autostart_asked", false)
             
@@ -172,7 +167,8 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun displayUserInfo() {
-        val userEmail = accountManager.getUserEmail() ?: "Usuario"
+        // Obtener email del usuario autenticado (Firebase)
+        val userEmail = authManager.getUserEmail() ?: "Usuario"
         supportActionBar?.subtitle = userEmail
     }
 
@@ -188,7 +184,7 @@ class MainActivity : AppCompatActivity() {
 
     private fun performLogout() {
         try {
-            accountManager.signOut()
+            authManager.signOut()
             Toast.makeText(this@MainActivity, "Sesión cerrada", Toast.LENGTH_SHORT).show()
             navigateToLogin()
         } catch (e: Exception) {
@@ -251,16 +247,13 @@ class MainActivity : AppCompatActivity() {
      * Configura el switch de notificación persistente / servicio activo
      */
     private fun setupNotificationSwitch() {
-        // Cargar preferencia guardada (por defecto FALSE - servicio desactivado)
         val showNotification = prefs.getBoolean(
             YapeNotificationListenerService.PREF_SHOW_NOTIFICATION,
-            false  // ← Cambiado de true a false
+            false
         )
         binding.switchPersistentNotification.isChecked = showNotification
         
-        // Listener para cuando el usuario cambie el switch
         binding.switchPersistentNotification.setOnCheckedChangeListener { _, isChecked ->
-            // Feedback INMEDIATO al usuario (antes de hacer nada)
             val message = if (isChecked) {
                 "✅ Activando servicio..."
             } else {
@@ -268,18 +261,14 @@ class MainActivity : AppCompatActivity() {
             }
             Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
             
-            // Guardar preferencia en segundo plano
             lifecycleScope.launch(Dispatchers.IO) {
                 prefs.edit()
                     .putBoolean(YapeNotificationListenerService.PREF_SHOW_NOTIFICATION, isChecked)
-                    .commit()  // commit() es síncrono pero en IO thread
+                    .commit()
                 
-                // Enviar broadcast al servicio (si está vivo lo recibirá)
                 withContext(Dispatchers.Main) {
                     sendBroadcast(Intent(YapeNotificationListenerService.ACTION_TOGGLE_NOTIFICATION))
                     
-                    // CRÍTICO: Si el servicio estaba muerto, el broadcast NO lo despierta.
-                    // Forzamos un Rebind del sistema para resucitarlo.
                     if (isChecked && Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
                         try {
                             requestServiceRebindIfNeeded()
@@ -304,7 +293,6 @@ class MainActivity : AppCompatActivity() {
 
                 binding.tvTransactionCount.text = count.toString()
 
-                // Mostrar/ocultar botones según haya datos
                 val hasData = count > 0
                 binding.btnExportCsv.isEnabled = hasData
                 binding.btnViewCsv.isEnabled = hasData
@@ -326,7 +314,6 @@ class MainActivity : AppCompatActivity() {
                 )
             } catch (e: Exception) {
                 android.util.Log.e("MainActivity", "Error al actualizar contador: ${e.message}", e)
-                // Fallback a conteo local si falla Firebase
                 val count = storage.getNotificationCount()
                 binding.tvTransactionCount.text = count.toString()
             }
@@ -372,7 +359,6 @@ class MainActivity : AppCompatActivity() {
         val content = storage.getAllNotificationsAsText()
         val lines = content.lines()
 
-        // Mostrar solo las primeras líneas para no saturar la UI
         val preview =
                 if (lines.size > 20) {
                     lines.take(20).joinToString("\n") + "\n\n... (${lines.size - 20} líneas más)"
@@ -416,7 +402,6 @@ class MainActivity : AppCompatActivity() {
         val isEnabled = isNotificationServiceEnabled()
 
         if (isEnabled) {
-            // if para cuando este habilitado
             binding.tvPermissionStatus.text = "Servicio con permiso "
             binding.statusIndicator.backgroundTintList =
                     ContextCompat.getColorStateList(this, android.R.color.holo_green_dark)
@@ -425,7 +410,6 @@ class MainActivity : AppCompatActivity() {
             binding.btnEnableNotifications.alpha = 0.6f
             binding.instrucciones.isVisible = false
         } else {
-            // if para cuando no este habilitado
             binding.tvPermissionStatus.text = "Servicio sin permiso "
             binding.statusIndicator.backgroundTintList =
                     ContextCompat.getColorStateList(this, android.R.color.holo_red_dark)
@@ -484,6 +468,7 @@ class MainActivity : AppCompatActivity() {
             adapter = yapeosAdapter
         }
     }
+    
     private fun loadYapeos() {
         lifecycleScope.launch {
             try {
@@ -493,28 +478,23 @@ class MainActivity : AppCompatActivity() {
 
                 val displayItems =
                         yapeos.map { data ->
-                            // Leer campos de la estructura simplificada
-                            val senderName = data["senderName"] as? String ?: "Desconocido"
-                            val amount = when (val a = data["amount"]) {
+                            // Leer campos del Firebase (Soporte para estructura Nueva y Antigua)
+                            val name = (data["senderName"] as? String) ?: (data["text"] as? String) ?: "Desconocido"
+                            
+                            val amount = when(val a = data["amount"] ?: data["bigText"]) {
                                 is Double -> a
                                 is Long -> a.toDouble()
                                 else -> 0.0
                             }
-                            val fecha = data["fecha"] as? String ?: ""
-                            val hora = data["hora"] as? String ?: ""
                             
-                            // Combinar fecha y hora para mostrar
-                            val fechaCompleta = if (hora.isNotEmpty()) {
-                                "$fecha a las $hora"
-                            } else {
-                                fecha
-                            }
+                            val title = data["title"] as? String ?: "Yape"
+                            val fechaStr = (data["fecha"] as? String) ?: (data["timestamp"] as? String) ?: ""
 
                             YapeDisplayItem(
-                                    monto = "S/ %.2f".format(java.util.Locale.US, amount),
-                                    texto = "$senderName te envió un pago",
-                                    fecha = fechaCompleta,
-                                    timestamp = (data["timestamp"] as? Long) ?: 0L
+                                monto = "S/ %.2f".format(java.util.Locale.US, amount), // Formatear como moneda
+                                texto = "$name te envió un pago",  // Texto descriptivo
+                                fecha = fechaStr,  // Ya viene formateado de Firebase
+                                timestamp = 0L  // No necesitamos ordenar, Firebase ya lo hace
                             )
                         }
 
