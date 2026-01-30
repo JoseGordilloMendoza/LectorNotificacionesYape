@@ -62,8 +62,11 @@ dependencies {
     implementation(libs.androidx.activity)
     implementation(libs.androidx.constraintlayout)
     
-    // Google Auth Base (para Account Picker - SIN OAuth)
-    implementation("com.google.android.gms:play-services-auth-base:18.0.10")
+    // Google Sign-In (Completo para Firebase Auth)
+    implementation("com.google.android.gms:play-services-auth:21.0.0")
+    
+    // Firebase Auth
+    implementation("com.google.firebase:firebase-auth-ktx:22.3.1")
     
     // Firebase Firestore (con versión explícita)
     implementation("com.google.firebase:firebase-firestore-ktx:24.10.0")
