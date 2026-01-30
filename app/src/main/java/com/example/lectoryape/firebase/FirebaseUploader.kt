@@ -47,10 +47,11 @@ class FirebaseUploader(private val context: Context) {
                 "amount" to notification.amount,         // Monto
                 "fecha" to fecha,                        // Ej: "2026-01-25"
                 "hora" to hora,                          // Ej: "12:30:45"
-                "status" to false,                       // Boolean: true = procesado
-                "timestamp" to notification.timestamp,   // Timestamp original (para ordenar)
-                "userEmail" to userEmail,                // Email del usuario (Legacy/Compatibilidad)
-                "userId" to userId                       // UID Único y Seguro (Nuevo estándar)
+                "status" to "pending",                   // pending
+                "branchId" to null,                      // ID de sucursal
+                "branchName" to null,                    // Nombre de sucursal
+                "timestamp" to notification.timestamp,   // Timestamp original
+                "userEmail" to userEmail                 // Email del usuario
             )
             
             // Subir a Firestore
