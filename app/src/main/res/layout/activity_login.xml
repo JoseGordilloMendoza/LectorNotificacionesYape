@@ -39,7 +39,7 @@
     <TextView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Para subir las notificaciones a Google Sheets, necesitamos que inicies sesión con tu cuenta de Google."
+        android:text="Necesitamos que inicies sesión con tu cuenta de Google."
         android:textSize="14sp"
         android:textColor="#666666"
         android:gravity="center"
