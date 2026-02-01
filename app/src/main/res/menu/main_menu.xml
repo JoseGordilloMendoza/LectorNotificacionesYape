@@ -3,9 +3,9 @@
     xmlns:app="http://schemas.android.com/apk/res-auto">
     
     <item
-        android:id="@+id/action_logout"
-        android:title="Cerrar sesión"
-        android:icon="@android:drawable/ic_lock_power_off"
-        app:showAsAction="never"/>
+        android:id="@+id/action_profile"
+        android:title="Perfil"
+        android:icon="@drawable/ic_person"
+        app:showAsAction="always"/>
         
 </menu>
