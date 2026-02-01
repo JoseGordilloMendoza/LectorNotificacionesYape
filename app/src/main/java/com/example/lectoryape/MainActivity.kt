@@ -76,6 +76,10 @@ class MainActivity : AppCompatActivity() {
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
+        // Configurar Toolbar como ActionBar
+        val toolbar = findViewById<com.google.android.material.appbar.MaterialToolbar>(R.id.toolbar)
+        setSupportActionBar(toolbar)
+
         storage = YapeNotificationStorage(this)
         firebaseUploader = FirebaseUploader(this)
 
@@ -92,7 +96,7 @@ class MainActivity : AppCompatActivity() {
             )
         }
 
-        displayUserInfo()
+        // displayUserInfo() call removed as it's now handled by Profile Dialog
         checkNotificationPermission()
         updateNotificationCount()
         setupNotificationSwitch()
@@ -158,18 +162,77 @@ class MainActivity : AppCompatActivity() {
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         return when (item.itemId) {
-            R.id.action_logout -> {
-                logout()
+            R.id.action_profile -> {
+                showProfileDialog()
                 true
             }
             else -> super.onOptionsItemSelected(item)
         }
     }
 
-    private fun displayUserInfo() {
-        // Obtener email del usuario autenticado (Firebase)
-        val userEmail = authManager.getUserEmail() ?: "Usuario"
-        supportActionBar?.subtitle = userEmail
+    private fun showProfileDialog() {
+        val dialogView = layoutInflater.inflate(R.layout.dialog_profile, null)
+        val dialog = AlertDialog.Builder(this)
+            .setView(dialogView)
+            .create()
+        
+        // Referencias a vistas
+        val ivPhoto = dialogView.findViewById<android.widget.ImageView>(R.id.ivProfilePhoto)
+        val tvName = dialogView.findViewById<android.widget.TextView>(R.id.tvProfileName)
+        val tvEmail = dialogView.findViewById<android.widget.TextView>(R.id.tvProfileEmail)
+        val tvStatus = dialogView.findViewById<android.widget.TextView>(R.id.tvProfileStatus)
+        val btnLogout = dialogView.findViewById<com.google.android.material.button.MaterialButton>(R.id.btnProfileLogout)
+        
+        // Cargar datos básicos de Auth (Usando nuestro Manager)
+        val user = authManager.getCurrentUser()
+        if (user != null) {
+            tvName.text = user.displayName ?: "Usuario"
+            tvEmail.text = user.email
+            // Como no tenemos Glide, dejamos el icono por defecto
+        }
+        
+        // Obtener estado de suscripción desde Firestore
+        if (user != null) {
+            tvStatus.text = "Cargando..."
+            com.google.firebase.firestore.FirebaseFirestore.getInstance()
+                .collection("users").document(user.uid)
+                .get()
+                .addOnSuccessListener { document ->
+                    if (document != null && document.exists()) {
+                        val subMap = document.get("subscription") as? Map<String, Any>
+                        val status = subMap?.get("status") as? String ?: "Free"
+                        val planName = subMap?.get("planName") as? String ?: "Básico"
+                        
+                        // Capitalizar primera letra
+                        val statusDisplay = status.substring(0, 1).uppercase() + status.substring(1)
+                        tvStatus.text = "$planName ($statusDisplay)"
+                        
+                        // Color según estado
+                        if (status == "trial" || status == "active") {
+                            tvStatus.setBackgroundColor(android.graphics.Color.parseColor("#4CAF50")) // Verde
+                        } else {
+                            tvStatus.setBackgroundColor(android.graphics.Color.parseColor("#D32F2F")) // Rojo
+                        }
+                    } else {
+                        tvStatus.text = "Sin Plan"
+                    }
+                }
+                .addOnFailureListener {
+                    tvStatus.text = "Error al cargar"
+                }
+        } else {
+             tvStatus.text = "No autenticado"
+        }
+
+        // Configurar Botón Salir
+        btnLogout.setOnClickListener {
+            dialog.dismiss()
+            logout() // Reutilizamos el método logout existente que pide confirmación
+        }
+        
+        dialog.show()
+        // Fondo transparente necesario para el CardView
+        dialog.window?.setBackgroundDrawable(android.graphics.drawable.ColorDrawable(android.graphics.Color.TRANSPARENT))
     }
 
     private fun logout() {
