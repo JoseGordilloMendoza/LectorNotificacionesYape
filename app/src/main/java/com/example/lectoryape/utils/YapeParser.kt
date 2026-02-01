@@ -4,11 +4,12 @@ import com.example.lectoryape.models.YapeNotificationRaw
 import android.service.notification.StatusBarNotification
 import android.util.Log
 
-    // yape a yape 
+    // Regex principal (Yape a Yape) - Requiere código de seguridad
     private val YAPE_REGEX = Regex("""(.+?)\s+te\s+envi(?:ó|Ã³|o)\s+un\s+pago\s+por\s+S/\s*([\d,]+(?:\.\d+)?).*?seguridad\s+es:\s*(\d+)""", RegexOption.IGNORE_CASE)
     
-    // BCP a yape
-    private val BCP_REGEX = Regex("""Yape!\s+(.+?)\s+te\s+envi(?:ó|Ã³|o)\s+un\s+pago\s+por\s+S/\s*([\d,]+(?:\.\d+)?)""", RegexOption.IGNORE_CASE)
+    // Regex Secundario (Bancos a Yape: BCP, PLIN, Interbank, etc.)
+    // Empiezan con "Yape!" y NO tienen código de seguridad visible en la notificación
+    private val BANK_REGEX = Regex("""Yape!\s+(.+?)\s+te\s+envi(?:ó|Ã³|o)\s+un\s+pago\s+por\s+S/\s*([\d,]+(?:\.\d+)?)""", RegexOption.IGNORE_CASE)
 
     fun parse(sbn: StatusBarNotification): YapeNotificationRaw? {
         val extras = sbn.notification.extras
@@ -23,19 +24,19 @@ import android.util.Log
 
         // 1. Intentar Regex Estándar (Yape a Yape)
         var matchResult = YAPE_REGEX.find(textToParse)
-        var codigo = "SIN_CODIGO" // Valor por defecto para BCP
+        var codigo = "SIN_CODIGO" // Valor por defecto para Bancos
 
         if (matchResult != null) {
             // Es un Yape normal con código
             val (n, m, c) = matchResult.destructured
             procesarYape(sbn, title, n, m, c)
         } else {
-            // 2. Intentar Regex BCP (banca movil a Yape)
-            matchResult = BCP_REGEX.find(textToParse)
+            // 2. Intentar Regex Bancos (BCP, PLIN, etc.)
+            matchResult = BANK_REGEX.find(textToParse)
             if (matchResult != null) {
-                // Es un Yape de BCP (Sin código)
+                // Es un Yape de Banco (Sin código)
                 val (n, m) = matchResult.destructured
-                Log.d("YapeParser", "✅ Encontrado patrón BCP/Banco")
+                Log.d("YapeParser", "✅ Encontrado patrón Banco (BCP/PLIN)")
                 procesarYape(sbn, title, n, m, codigo)
             } else {
                 Log.e("YapeParser", "❌ FALLÓ EL REGEX. No coincide con ningún patrón conocido.")
