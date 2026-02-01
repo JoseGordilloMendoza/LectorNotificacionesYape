@@ -4,6 +4,8 @@ import com.example.lectoryape.models.YapeNotificationRaw
 import android.service.notification.StatusBarNotification
 import android.util.Log
 
+
+object YapeParser {
     // Regex principal (Yape a Yape) - Requiere código de seguridad
     private val YAPE_REGEX = Regex("""(.+?)\s+te\s+envi(?:ó|Ã³|o)\s+un\s+pago\s+por\s+S/\s*([\d,]+(?:\.\d+)?).*?seguridad\s+es:\s*(\d+)""", RegexOption.IGNORE_CASE)
     
@@ -24,25 +26,24 @@ import android.util.Log
 
         // 1. Intentar Regex Estándar (Yape a Yape)
         var matchResult = YAPE_REGEX.find(textToParse)
-        var codigo = "SIN_CODIGO" // Valor por defecto para Bancos
 
         if (matchResult != null) {
             // Es un Yape normal con código
             val (n, m, c) = matchResult.destructured
-            procesarYape(sbn, title, n, m, c)
-        } else {
-            // 2. Intentar Regex Bancos (BCP, PLIN, etc.)
-            matchResult = BANK_REGEX.find(textToParse)
-            if (matchResult != null) {
-                // Es un Yape de Banco (Sin código)
-                val (n, m) = matchResult.destructured
-                Log.d("YapeParser", "✅ Encontrado patrón Banco (BCP/PLIN)")
-                procesarYape(sbn, title, n, m, codigo)
-            } else {
-                Log.e("YapeParser", "❌ FALLÓ EL REGEX. No coincide con ningún patrón conocido.")
-                null
-            }
-        }
+            return procesarYape(sbn, title, n, m, c)
+        } 
+        
+        // 2. Intentar Regex Bancos (BCP, PLIN, etc.)
+        matchResult = BANK_REGEX.find(textToParse)
+        if (matchResult != null) {
+            // Es un Yape de Banco (Sin código)
+            val (n, m) = matchResult.destructured
+            Log.d("YapeParser", "✅ Encontrado patrón Banco (BCP/PLIN)")
+            return procesarYape(sbn, title, n, m, "SIN_CODIGO")
+        } 
+            
+        Log.e("YapeParser", "❌ FALLÓ EL REGEX. No coincide con ningún patrón conocido.")
+        return null
     }
 
     private fun procesarYape(sbn: StatusBarNotification, title: String, nombre: String, montoStr: String, codigo: String): YapeNotificationRaw {
