@@ -290,8 +290,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun setupUI() {
-        // Botón de logout
-        binding.btnLogout.setOnClickListener { logout() }
+
 
         // Botón para abrir configuración de notificaciones
         binding.btnEnableNotifications.setOnClickListener { openNotificationSettings() }

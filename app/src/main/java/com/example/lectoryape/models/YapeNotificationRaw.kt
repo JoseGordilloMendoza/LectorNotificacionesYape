@@ -18,8 +18,7 @@ data class YapeNotificationRaw(
     val notificationId: Int
 ) {
     /**
-     * Convierte la notificación a formato CSV
-     * Escapa las comas y comillas para evitar problemas con el formato CSV
+     * A formato csv, esta es solo para el local
      */
     fun toCsvLine(): String {
         val fechaLegible = com.example.lectoryape.utils.DateFormatter.formatTimestamp(timestamp)

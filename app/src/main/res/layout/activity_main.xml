@@ -37,18 +37,7 @@
         android:textColor="#666666"
         android:layout_marginBottom="16dp"/>
 
-    <!-- Botón de Logout -->
-    <Button
-        android:id="@+id/btnLogout"
-        android:layout_width="wrap_content"
-        android:layout_height="48dp"
-        android:text="🚪 Cerrar Sesión"
-        android:textSize="14sp"
-        android:backgroundTint="#FF5252"
-        android:textColor="@color/white"
-        android:layout_marginBottom="32dp"
-        android:paddingStart="24dp"
-        android:paddingEnd="24dp"/>
+
 
     <!-- Estado del Permiso -->
     <androidx.cardview.widget.CardView
