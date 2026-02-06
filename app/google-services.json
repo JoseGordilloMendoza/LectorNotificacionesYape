@@ -1,41 +1,33 @@
 {
   "project_info": {
-    "project_number": "578676165626",
-    "project_id": "lectoryape-478a9",
-    "storage_bucket": "lectoryape-478a9.firebasestorage.app"
+    "project_number": "181900808337",
+    "project_id": "testing-4ada2",
+    "storage_bucket": "testing-4ada2.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:578676165626:android:01c66acca97f778b8d3243",
+        "mobilesdk_app_id": "1:181900808337:android:c9a3c351f78bd03925af30",
         "android_client_info": {
           "package_name": "com.example.lectoryape"
         }
       },
       "oauth_client": [
         {
-          "client_id": "578676165626-mtn06pmjkd52oqdg72o956pbf246ajia.apps.googleusercontent.com",
-          "client_type": 1,
-          "android_info": {
-            "package_name": "com.example.lectoryape",
-            "certificate_hash": "3f465b0e3e839414b045fc2c64ab8566af91f9b1"
-          }
-        },
-        {
-          "client_id": "578676165626-evepgh7cp816h2k4pjvqpd5haa0ptsrb.apps.googleusercontent.com",
+          "client_id": "181900808337-npntue8ag45usi9mrmc6tj972n4uq89u.apps.googleusercontent.com",
           "client_type": 3
         }
       ],
       "api_key": [
         {
-          "current_key": "AIzaSyAUvPv-FReyIdiPFWl_inSBTEU1TXgKQIE"
+          "current_key": "AIzaSyC0XdNHCPLFZkEqzFE56lMSrSE8QDDOmw8"
         }
       ],
       "services": {
         "appinvite_service": {
           "other_platform_oauth_client": [
             {
-              "client_id": "578676165626-evepgh7cp816h2k4pjvqpd5haa0ptsrb.apps.googleusercontent.com",
+              "client_id": "181900808337-npntue8ag45usi9mrmc6tj972n4uq89u.apps.googleusercontent.com",
               "client_type": 3
             }
           ]
