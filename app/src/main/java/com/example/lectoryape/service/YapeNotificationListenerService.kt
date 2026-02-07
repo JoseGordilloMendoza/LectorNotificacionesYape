@@ -61,8 +61,9 @@ class YapeNotificationListenerService : NotificationListenerService() {
         // debuggeo xd
         private const val DEBUG_MODE = true  // ← ACTIVADO para debugging
         
-        // pakeich de yape xd
+// pakeich de yape xd
         private const val YAPE_PACKAGE = "com.bcp.innovacxion.yapeapp"
+        private const val PLIN_PACKAGE = "pe.com.interbank.mobilebanking"
         
         // Acción del broadcast para notificar a MainActivity
         const val ACTION_NOTIFICATION_SAVED = "com.example.lectoryape.NOTIFICATION_SAVED"
@@ -91,7 +92,9 @@ class YapeNotificationListenerService : NotificationListenerService() {
             
             // En DEBUG_MODE: capturar TODAS las notificaciones
             // En modo normal: solo YAPE
-            if (DEBUG_MODE || notification.packageName == YAPE_PACKAGE) {
+            // En DEBUG_MODE: capturar TODAS las notificaciones
+            // En modo normal: solo YAPE y PLIN
+            if (DEBUG_MODE || notification.packageName == YAPE_PACKAGE || notification.packageName == PLIN_PACKAGE) {
                 processYapeNotification(notification)
             }
         }
