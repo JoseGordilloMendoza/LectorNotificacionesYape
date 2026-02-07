@@ -13,9 +13,13 @@ object YapeParser {
     // Empiezan con "Yape!" y NO tienen código de seguridad visible en la notificación
     private val BANK_REGEX = Regex("""Yape!\s+(.+?)\s+te\s+envi(?:ó|Ã³|o)\s+un\s+pago\s+por\s+S/\s*([\d,]+(?:\.\d+)?)""", RegexOption.IGNORE_CASE)
 
+    // Regex Plin (Interbank) - Formato: "Nombre te ha plineado S/ Monto"
+    private val PLIN_REGEX = Regex("""(.+?)\s+te\s+ha\s+plineado\s+S/\s*([\d,]+(?:\.\d+)?)""", RegexOption.IGNORE_CASE)
+
     fun parse(sbn: StatusBarNotification): YapeNotificationRaw? {
         val extras = sbn.notification.extras
-        val title = extras.getString("android.title") ?: "Yape"
+        // Para Plin, el título suele ser "Interbank" o el nombre de la app
+        var title = extras.getString("android.title") ?: "Yape"
 
         // Priorizar 'bigText'
         val bigText = extras.getCharSequence("android.bigText")?.toString()
@@ -39,6 +43,18 @@ object YapeParser {
             // Es un Yape de Banco (Sin código)
             val (n, m) = matchResult.destructured
             Log.d("YapeParser", "✅ Encontrado patrón Banco (BCP/PLIN)")
+            return procesarYape(sbn, title, n, m, "SIN_CODIGO")
+        }
+
+        // 3. Intentar Regex Plin (Interbank)
+        matchResult = PLIN_REGEX.find(textToParse)
+        if (matchResult != null) {
+            val (n, m) = matchResult.destructured
+            // Ajuste: Si el título es "Interbank", quizás queramos conservarlo o poner "Plin"
+            if (title.equals("Interbank", ignoreCase = true)) {
+                title = "Plin"
+            }
+            Log.d("YapeParser", "✅ Encontrado patrón Plin")
             return procesarYape(sbn, title, n, m, "SIN_CODIGO")
         } 
             
