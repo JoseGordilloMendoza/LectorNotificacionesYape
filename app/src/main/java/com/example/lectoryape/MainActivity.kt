@@ -116,43 +116,12 @@ class MainActivity : AppCompatActivity() {
      * Si no lo está, muestra un diálogo para solicitarlo
      * También verifica AutoStart en Xiaomi
      */
+    /**
+     * Verifica si la app está exenta de optimización de batería
+     * Delega la lógica al BatteryOptimizationHelper
+     */
     private fun checkBatteryOptimization() {
-        // 1. Verificar AutoStart en Xiaomi (Es lo más crítico y oculto)
-        val manufacturer = Build.MANUFACTURER.lowercase()
-        if ("xiaomi" in manufacturer || "redmi" in manufacturer) {
-            val prefs = getSharedPreferences("miui_settings", Context.MODE_PRIVATE)
-            val alreadyAsked = prefs.getBoolean("autostart_asked", false)
-            
-            if (!alreadyAsked) {
-                AlertDialog.Builder(this)
-                    .setTitle("⚠️ Configuración Xiaomi Detectada")
-                    .setMessage("En teléfonos Xiaomi/Redmi es OBLIGATORIO activar el 'Inicio Automático' para que la app no se apague sola.\n\nAl presionar 'Ir a Configuración', busca esta app y activa el interruptor.")
-                    .setPositiveButton("Ir a Configuración") { _, _ ->
-                        com.example.lectoryape.utils.BatteryOptimizationHelper.checkAndRequestAutoStart(this)
-                        prefs.edit().putBoolean("autostart_asked", true).apply()
-                    }
-                    .setNeutralButton("Más tarde", null)
-                    .show()
-                return // Priorizamos esto sobre la batería normal
-            }
-        }
-
-        // 2. Verificar Optimización de Batería (Doze Mode)
-        if (!com.example.lectoryape.utils.BatteryOptimizationHelper.isIgnoringBatteryOptimizations(this)) {
-            android.util.Log.w("MainActivity", "⚠️ App NO está exenta de optimización de batería")
-            
-            // Mostrar diálogo explicativo
-            AlertDialog.Builder(this)
-                .setTitle("⚡ Optimización de Batería")
-                .setMessage("Para garantizar que SIEMPRE se capturen las notificaciones, es necesario seleccionar 'Sin Restricciones'.\n\n¿Deseas configurarlo ahora?")
-                .setPositiveButton("Sí") { _, _ ->
-                    com.example.lectoryape.utils.BatteryOptimizationHelper.requestIgnoreBatteryOptimizations(this)
-                }
-                .setNegativeButton("Después", null)
-                .show()
-        } else {
-            android.util.Log.d("MainActivity", "✅ App exenta de optimización de batería")
-        }
+        com.example.lectoryape.utils.BatteryOptimizationHelper.checkAndRequest(this)
     }
 
     override fun onCreateOptionsMenu(menu: Menu?): Boolean {
