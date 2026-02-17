@@ -8,6 +8,9 @@
     <!-- Permiso para Foreground Service (Android 9.0+) -->
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     
+    <!-- Tipo específico de Foreground Service (Android 14+) -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
+    
     <!-- Permiso para mostrar notificaciones (Android 13+) -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     
@@ -57,6 +60,7 @@
             android:name=".service.YapeNotificationListenerService"
             android:label="Lector YAPE"
             android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE"
+            android:foregroundServiceType="specialUse"
             android:exported="false">
             <intent-filter>
                 <action android:name="android.service.notification.NotificationListenerService" />
