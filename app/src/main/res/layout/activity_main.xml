@@ -225,6 +225,18 @@
 
     </LinearLayout>
 
+    <!-- Botón para ir al Portal Web -->
+    <Button
+        android:id="@+id/btnOpenWeb"
+        android:layout_width="match_parent"
+        android:layout_height="52dp"
+        android:text="🌐 Ver en la Web"
+        android:textSize="15sp"
+        android:textStyle="bold"
+        android:backgroundTint="#00897B"
+        android:textColor="@color/white"
+        android:layout_marginBottom="8dp"/>
+
     <Button
         android:id="@+id/btnClearData"
         android:layout_width="match_parent"
