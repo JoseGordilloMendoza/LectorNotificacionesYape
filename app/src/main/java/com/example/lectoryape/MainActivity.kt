@@ -165,6 +165,38 @@ class MainActivity : AppCompatActivity() {
             android.util.Log.e("MainActivity", "❌ Error al cargar yapeos: ${e.message}", e)
         }
     }
+
+    /**
+     * Muestra un diálogo bloqueante cuando la suscripción ha expirado.
+     * Ofrece ir a la web para renovar o cerrar sesión.
+     */
+    private fun showSubscriptionExpiredDialog() {
+        AlertDialog.Builder(this)
+            .setTitle("⏰ Suscripción Expirada")
+            .setMessage("Tu período de prueba o suscripción ha finalizado.\n\nPara seguir usando la app, renueva tu plan desde nuestra página web.")
+            .setPositiveButton("🌐 Ir a la Web") { _, _ ->
+                openWebPortal()
+                // Después de abrir el navegador, cerrar sesión
+                performLogout()
+            }
+            .setNegativeButton("Cerrar Sesión") { _, _ ->
+                performLogout()
+            }
+            .setCancelable(false)
+            .show()
+    }
+
+    /**
+     * Abre el portal web de Yape Visualizer en el navegador
+     */
+    private fun openWebPortal() {
+        try {
+            val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://yapevisualizer.onrender.com"))
+            startActivity(intent)
+        } catch (e: Exception) {
+            Toast.makeText(this, "No se pudo abrir el navegador", Toast.LENGTH_SHORT).show()
+        }
+    }
     
     /**
      * Verifica si la app está exenta de optimización de batería
@@ -327,6 +359,9 @@ class MainActivity : AppCompatActivity() {
 
         // Botón para limpiar datos
         binding.btnClearData.setOnClickListener { confirmClearData() }
+
+        // Botón para abrir el portal web
+        binding.btnOpenWeb.setOnClickListener { openWebPortal() }
     }
     
     /**
