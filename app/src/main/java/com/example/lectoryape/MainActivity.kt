@@ -113,11 +113,11 @@ class MainActivity : AppCompatActivity() {
 
                     if (isActive && status != "expired") {
                         // ✅ Suscripción válida → Inicializar app
-                        android.util.Log.d("MainActivity", "✅ Suscripción activa: $status")
+                        android.util.Log.d("MainActivity", "sub activa: $status")
                         initializeApp()
                     } else {
                         // ❌ Suscripción expirada → Bloquear
-                        android.util.Log.w("MainActivity", "⚠️ Suscripción expirada: isActive=$isActive, status=$status")
+                        android.util.Log.w("MainActivity", "sub expirada: isActive=$isActive, status=$status")
                         showSubscriptionExpiredDialog()
                     }
                 } else {
@@ -151,6 +151,7 @@ class MainActivity : AppCompatActivity() {
             )
         }
 
+        // displayUserInfo() call removed as it's now handled by Profile Dialog
         checkNotificationPermission()
         updateNotificationCount()
         setupNotificationSwitch()
@@ -163,20 +164,6 @@ class MainActivity : AppCompatActivity() {
         } catch (e: Exception) {
             android.util.Log.e("MainActivity", "❌ Error al cargar yapeos: ${e.message}", e)
         }
-    }
-
-    /**
-     * Muestra un diálogo bloqueante cuando la suscripción ha expirado
-     */
-    private fun showSubscriptionExpiredDialog() {
-        AlertDialog.Builder(this)
-            .setTitle("⏰ Suscripción Expirada")
-            .setMessage("Tu período de prueba o suscripción ha finalizado.\n\nPara seguir usando la app, renueva tu plan desde la página web.")
-            .setPositiveButton("Cerrar Sesión") { _, _ ->
-                performLogout()
-            }
-            .setCancelable(false) // No se puede cerrar tocando afuera
-            .show()
     }
     
     /**
