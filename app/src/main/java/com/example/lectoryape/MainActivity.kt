@@ -298,7 +298,10 @@ class MainActivity : AppCompatActivity() {
                     .commit()
                 
                 withContext(Dispatchers.Main) {
-                    sendBroadcast(Intent(YapeNotificationListenerService.ACTION_TOGGLE_NOTIFICATION))
+                    // Broadcast con paquete explícito para garantizar entrega en Android 14+/OEMs
+                    val toggleIntent = Intent(YapeNotificationListenerService.ACTION_TOGGLE_NOTIFICATION)
+                    toggleIntent.setPackage(packageName)
+                    sendBroadcast(toggleIntent)
                     
                     if (isChecked && Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
                         try {
