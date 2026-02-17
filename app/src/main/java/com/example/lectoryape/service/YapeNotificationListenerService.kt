@@ -247,11 +247,12 @@ class YapeNotificationListenerService : NotificationListenerService() {
     
     /**
      * Registra el BroadcastReceiver para escuchar cambios del switch
+     * Usamos RECEIVER_EXPORTED porque el broadcast viene de nuestra propia app (con setPackage)
      */
     private fun registerToggleReceiver() {
         val filter = IntentFilter(ACTION_TOGGLE_NOTIFICATION)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            registerReceiver(toggleReceiver, filter, RECEIVER_NOT_EXPORTED)
+            registerReceiver(toggleReceiver, filter, RECEIVER_EXPORTED)
         } else {
             registerReceiver(toggleReceiver, filter)
         }
