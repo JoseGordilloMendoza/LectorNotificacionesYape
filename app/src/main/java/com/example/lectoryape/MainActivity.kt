@@ -83,6 +83,61 @@ class MainActivity : AppCompatActivity() {
         storage = YapeNotificationStorage(this)
         firebaseUploader = FirebaseUploader(this)
 
+        // Verificar suscripción ANTES de inicializar la app
+        checkSubscription()
+    }
+
+    /* Verificacion de suscripcion de user
+    Si la prueba expiró o está inactiva, muestra un diálogo bloqueante.
+     */
+    private fun checkSubscription() {
+        val user = authManager.getCurrentUser()
+        if (user == null) {
+            navigateToLogin()
+            return
+        }
+
+        // Mostrar loading mientras verificamos
+        binding.root.alpha = 0.5f
+
+        com.google.firebase.firestore.FirebaseFirestore.getInstance()
+            .collection("users").document(user.uid)
+            .get()
+            .addOnSuccessListener { document ->
+                binding.root.alpha = 1.0f
+
+                if (document != null && document.exists()) {
+                    val subMap = document.get("subscription") as? Map<String, Any>
+                    val isActive = subMap?.get("isActive") as? Boolean ?: false
+                    val status = subMap?.get("status") as? String ?: "expired"
+
+                    if (isActive && status != "expired") {
+                        // ✅ Suscripción válida → Inicializar app
+                        android.util.Log.d("MainActivity", "✅ Suscripción activa: $status")
+                        initializeApp()
+                    } else {
+                        // ❌ Suscripción expirada → Bloquear
+                        android.util.Log.w("MainActivity", "⚠️ Suscripción expirada: isActive=$isActive, status=$status")
+                        showSubscriptionExpiredDialog()
+                    }
+                } else {
+                    // No tiene documento de usuario → tratar como expirado
+                    showSubscriptionExpiredDialog()
+                }
+            }
+            .addOnFailureListener { e ->
+                binding.root.alpha = 1.0f
+                android.util.Log.e("MainActivity", "Error verificando suscripción: ${e.message}")
+                // En caso de error de red, permitir uso (para no bloquear sin internet)
+                Toast.makeText(this, "⚠️ No se pudo verificar suscripción", Toast.LENGTH_SHORT).show()
+                initializeApp()
+            }
+    }
+
+    /**
+     * Inicializa toda la funcionalidad de la app (solo se llama si la suscripción es válida)
+     */
+    private fun initializeApp() {
         setupUI()
 
         try {
@@ -96,7 +151,6 @@ class MainActivity : AppCompatActivity() {
             )
         }
 
-        // displayUserInfo() call removed as it's now handled by Profile Dialog
         checkNotificationPermission()
         updateNotificationCount()
         setupNotificationSwitch()
@@ -109,6 +163,20 @@ class MainActivity : AppCompatActivity() {
         } catch (e: Exception) {
             android.util.Log.e("MainActivity", "❌ Error al cargar yapeos: ${e.message}", e)
         }
+    }
+
+    /**
+     * Muestra un diálogo bloqueante cuando la suscripción ha expirado
+     */
+    private fun showSubscriptionExpiredDialog() {
+        AlertDialog.Builder(this)
+            .setTitle("⏰ Suscripción Expirada")
+            .setMessage("Tu período de prueba o suscripción ha finalizado.\n\nPara seguir usando la app, renueva tu plan desde la página web.")
+            .setPositiveButton("Cerrar Sesión") { _, _ ->
+                performLogout()
+            }
+            .setCancelable(false) // No se puede cerrar tocando afuera
+            .show()
     }
     
     /**
