@@ -14,7 +14,7 @@ class FirebaseUploader(private val context: Context) {
     
     companion object {
         private const val TAG = "FirebaseUploader"
-        private const val COLLECTION_NAME = "yape_notifications"
+        private const val YAPEOS_SUBCOLLECTION = "yape_notifications"
     }
     
     private val firestore: FirebaseFirestore = FirebaseFirestore.getInstance()
@@ -25,45 +25,45 @@ class FirebaseUploader(private val context: Context) {
      */
     suspend fun uploadNotification(notification: YapeNotificationRaw): Boolean {
         return try {
-            // Obtener usuario logueado REAL
             val currentUser = authManager.getCurrentUser()
-            val userEmail = currentUser?.email ?: "unknown"
-            val userId = currentUser?.uid ?: "unknown"
+            val userId = currentUser?.uid ?: run {
+                Log.e(TAG, "usuario no logueado")
+                return false
+            }
             
-            // Formatear fecha y hora usando DateFormatters específicos
             val dateDate = java.util.Date(notification.timestamp)
             
-            // Formato Fecha: "2026-01-25"
             val sdfFecha = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.getDefault())
             val fecha = sdfFecha.format(dateDate)
             
-            // Formato Hora: "12:30:45"
             val sdfHora = java.text.SimpleDateFormat("HH:mm:ss", java.util.Locale.getDefault())
             val hora = sdfHora.format(dateDate)
             
-            // Crear documento simplificado para Firestore
+            // formaato doc de yapeo
             val data = hashMapOf(
-                "senderName" to notification.name,       // Nombre del emisor
-                "amount" to notification.amount,         // Monto
-                "fecha" to fecha,                        // Ej: "2026-01-25"
-                "hora" to hora,                          // Ej: "12:30:45"
-                "status" to "pending",                   // pending
-                "branchId" to null,                      // ID de sucursal
-                "branchName" to null,                    // Nombre de sucursal
-                "timestamp" to notification.timestamp,   // Timestamp original
-                "userEmail" to userEmail                 // Email del usuario
+                "senderName" to notification.name,
+                "amount" to notification.amount,
+                "fecha" to fecha,
+                "hora" to hora,
+                "status" to "pending",
+                "branchId" to null,
+                "branchName" to null,
+                "timestamp" to notification.timestamp,
+                "walletType" to notification.walletType  // "Yape" o "Plin"
             )
             
-            // Subir a Firestore
-            firestore.collection(COLLECTION_NAME)
+            // Esubcolección: usuario/yape_notifications
+            firestore.collection("users")
+                .document(userId)
+                .collection(YAPEOS_SUBCOLLECTION)
                 .add(data)
                 .await()
             
-            Log.d(TAG, "✅ Notificación subida a Firebase: ${notification.name} - S/${notification.amount}")
+            Log.d(TAG, "uploaded a users/$userId/yape_notifications: ${notification.name} - S/${notification.amount} [${notification.walletType}]")
             true
             
         } catch (e: Exception) {
-            Log.e(TAG, "❌ Error al subir a Firebase: ${e.message}", e)
+            Log.e(TAG, "error subida a firebase: ${e.message}", e)
             false
         }
     }
@@ -80,7 +80,7 @@ class FirebaseUploader(private val context: Context) {
             }
         }
         
-        Log.d(TAG, "📊 Subidas: $successCount/${notifications.size}")
+        Log.d(TAG, "uploads: $successCount/${notifications.size}")
         return successCount
     }
     
@@ -89,50 +89,40 @@ class FirebaseUploader(private val context: Context) {
      */
     suspend fun getUserYapeos(): List<Map<String, Any>> {
         return try {
-            val userEmail = authManager.getUserEmail()?.lowercase() // Normalizar a minúsculas
-            Log.d(TAG, "🔍 Buscando yapeos para email: $userEmail")
-            
-            if (userEmail == null) {
-                Log.w(TAG, "⚠️ No hay usuario logueado o email es nulo")
+            val currentUser = authManager.getCurrentUser()
+            val userId = currentUser?.uid ?: run {
+                Log.w(TAG, " usuario no logueado")
                 return emptyList()
             }
             
-            // Nota: Podríamos filtrar por userId también, pero mantenemos email por compatibilidad
-            val snapshot = firestore.collection(COLLECTION_NAME)
-                .whereEqualTo("userEmail", userEmail)
+            Log.d(TAG, "debug buscando yapeos en users/$userId/yape_notifications")
+            
+            // Leer directamente de la subcolección del usuario
+            val snapshot = firestore.collection("users")
+                .document(userId)
+                .collection(YAPEOS_SUBCOLLECTION)
                 .limit(100)
                 .get()
                 .await()
             
-            Log.d(TAG, "📊 Documentos encontrados: ${snapshot.size()} para query userEmail='$userEmail'")
+            Log.d(TAG, "docs encontrados: ${snapshot.size()}")
             
-            if (snapshot.isEmpty) {
-                Log.w(TAG, "⚠️ La consulta devolvió 0 documentos. Verifica mayúsculas/minúsculas en Firebase.")
-            }
-            
-            val results = snapshot.documents.mapNotNull { doc ->
-                // Loguear estructura del primer documento para debug
-                // if (snapshot.documents.indexOf(doc) == 0) Log.d(TAG, "Estructura doc ejemplo: ${doc.data}")
+            snapshot.documents.mapNotNull { doc ->
                 doc.data
             }.sortedByDescending { data ->
                 (data["timestamp"] as? Long) ?: 0L
             }
-            
-            results
         } catch (e: Exception) {
-            Log.e(TAG, "❌ Error al obtener yapeos del usuario: ${e.message}", e)
+            Log.e(TAG, "Error OBTENIENDO yapeos: ${e.message}", e)
             emptyList()
         }
     }
     
     /**
-     * Guarda o actualiza el usuario en la colección 'users'
+     * creacion o actualizacion en la colección 'users'
      */
     /**
-     * Guarda o actualiza el usuario en la colección 'users'
-     * Sincronizado con la lógica de la Web App (Vue.js):
-     * - Si no existe: Crea perfil con rol 'owner' y Suscripción 'trial' (7 días).
-     * - Si existe: Solo actualiza lastLogin.
+     * - no existe: Crea perfil con rol 'owner' y Suscripción 'trial' (7 días).
      */
     /**
      * Guarda el usuario en 'users' SOLO si es la primera vez (Igual que la web)
@@ -175,14 +165,14 @@ class FirebaseUploader(private val context: Context) {
                 )
 
                 userRef.set(userData).await()
-                Log.d(TAG, "✅ Perfil NUEVO creado (Sync Web): ${user.email}")
+                Log.d(TAG, "nuevo perfil: ${user.email}")
                 
             } else {
-                Log.d(TAG, "ℹ️ El usuario ya existe, no se toca nada (Sync Web): ${user.email}")
+                Log.d(TAG, "usuario existente: ${user.email}")
             }
             
         } catch (e: Exception) {
-            Log.e(TAG, "❌ Error al sincronizar usuario: ${e.message}", e)
+            Log.e(TAG, "error en sincronizacion usuario: ${e.message}", e)
         }
     }
 }
