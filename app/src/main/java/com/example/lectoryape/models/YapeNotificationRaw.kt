@@ -15,7 +15,8 @@ data class YapeNotificationRaw(
     val amount: Double,
     val timestamp: Long,
     val securityCode: String,
-    val notificationId: Int
+    val notificationId: Int,
+    val walletType: String = "Yape" // "Yape" o "Plin"
 ) {
     /**
      * A formato csv, esta es solo para el local
