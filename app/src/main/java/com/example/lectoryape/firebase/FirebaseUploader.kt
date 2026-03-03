@@ -21,7 +21,7 @@ class FirebaseUploader(private val context: Context) {
     private val authManager = FirebaseAuthManager(context)
     
     /**
-     * Sube una notificación a Firestore con estructura simplificada
+     subida de yapeo
      */
     suspend fun uploadNotification(notification: YapeNotificationRaw): Boolean {
         return try {
@@ -52,7 +52,7 @@ class FirebaseUploader(private val context: Context) {
                 "walletType" to notification.walletType  // "Yape" o "Plin"
             )
             
-            // Esubcolección: usuario/yape_notifications
+            // subcolección: usuario/yape_notifications
             firestore.collection("users")
                 .document(userId)
                 .collection(YAPEOS_SUBCOLLECTION)
@@ -85,7 +85,7 @@ class FirebaseUploader(private val context: Context) {
     }
     
     /**
-     * Obtiene los yapeos del usuario actual (filtrado por email)
+    yapeos del usuario actual
      */
     suspend fun getUserYapeos(): List<Map<String, Any>> {
         return try {
