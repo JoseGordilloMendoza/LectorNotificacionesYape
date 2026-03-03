@@ -59,16 +59,16 @@ class YapeNotificationListenerService : NotificationListenerService() {
     companion object {
         private const val TAG = "YapeNotificationListener"
         // debuggeo xd
-        private const val DEBUG_MODE = true  // ← ACTIVADO para debugging
+        private const val DEBUG_MODE = true
         
-// pakeich de yape xd
+        // package de yape
         private const val YAPE_PACKAGE = "com.bcp.innovacxion.yapeapp"
         private const val PLIN_PACKAGE = "pe.com.interbank.mobilebanking"
         
-        // Acción del broadcast para notificar a MainActivity
+        // broadcast notifica a MainActivity
         const val ACTION_NOTIFICATION_SAVED = "com.example.lectoryape.NOTIFICATION_SAVED"
         
-        // Acción del broadcast para controlar la notificación persistente
+        // broadcast controla la notificación persistente
         const val ACTION_TOGGLE_NOTIFICATION = "com.example.lectoryape.TOGGLE_NOTIFICATION"
         
         // Key para SharedPreferences
@@ -78,7 +78,7 @@ class YapeNotificationListenerService : NotificationListenerService() {
     override fun onNotificationPosted(sbn: StatusBarNotification?) {
         super.onNotificationPosted(sbn)
         
-        // Verificar si el servicio está habilitado por el usuario
+        // verificar servicio activo
         if (!isServiceEnabled()) {
             Log.d(TAG, "Servicio deshabilitado por el usuario - notificación ignorada")
             return
@@ -86,14 +86,10 @@ class YapeNotificationListenerService : NotificationListenerService() {
         
         sbn?.let { notification ->
             if (DEBUG_MODE) {
-                // MODO DEBUG: Logea TODAS las notificaciones con información detallada
+                // MODO DEBUG: Logea TODAS las notificaciones
                 logNotificationDetails(notification)
             }
             
-            // En DEBUG_MODE: capturar TODAS las notificaciones
-            // En modo normal: solo YAPE
-            // En DEBUG_MODE: capturar TODAS las notificaciones
-            // En modo normal: solo YAPE y PLIN
             if (DEBUG_MODE || notification.packageName == YAPE_PACKAGE || notification.packageName == PLIN_PACKAGE) {
                 processYapeNotification(notification)
             }
@@ -102,7 +98,7 @@ class YapeNotificationListenerService : NotificationListenerService() {
     
     override fun onNotificationRemoved(sbn: StatusBarNotification?) {
         super.onNotificationRemoved(sbn)
-        // Por ahora no hacemos nada cuando se remueve una notificación
+        //dumb
     }
     
     /**
@@ -112,11 +108,10 @@ class YapeNotificationListenerService : NotificationListenerService() {
         val extras = sbn.notification.extras
         val title = extras.getString("android.title") ?: "Sin título"
         val text = extras.getString("android.text") ?: "Sin texto"
-        // bigText suele ser CharSequence, lo forzamos a String
         val bigText = extras.getCharSequence("android.bigText")?.toString() ?: "No hay informacion detallada"
 
         Log.d(TAG, """
-        ══ DEBUG NOTIFICACIÓN ══
+        /. notifacion capturada .\
         App: ${sbn.packageName}
         ID: ${sbn.id}
         Title: $title
@@ -126,30 +121,28 @@ class YapeNotificationListenerService : NotificationListenerService() {
     """.trimIndent())
     }
     
-    /**
-     * Procesa notificaciones específicas de Yape
-     */
+    // only yapey plin
     private fun processYapeNotification(sbn: StatusBarNotification) {
         try {
-            val yapePayment = YapeParser.parse(sbn)
+            val yapePlinPayment = YapeParser.parse(sbn)
 
-            if (yapePayment == null) {
+            if (yapePlinPayment == null) {
                 Log.w(TAG, "Formato de notificación no reconocido: ${sbn.notification.extras.getString("android.text")}")
                 return
             }
 
-            logYapePayment(yapePayment)
+            logYapePayment(yapePlinPayment)
 
-            // Guardar local
-            val saved = storage.saveNotification(yapePayment)
+            // csv
+            val saved = storage.saveNotification(yapePlinPayment)
             if (saved) {
                 sendBroadcast(Intent(ACTION_NOTIFICATION_SAVED))
             }
 
-            // Subir a Firebase con un try-catch interno para que no rompa el resto
+            // subir a Firebase
             CoroutineScope(Dispatchers.IO).launch {
                 try {
-                    firebaseUploader.uploadNotification(yapePayment)
+                    firebaseUploader.uploadNotification(yapePlinPayment)
                 } catch (e: Exception) {
                     Log.e(TAG, "Error subiendo a Firebase: ${e.message}")
                 }
@@ -162,7 +155,7 @@ class YapeNotificationListenerService : NotificationListenerService() {
     private fun logYapePayment(payment: YapeNotificationRaw) {
         val fecha = com.example.lectoryape.utils.DateFormatter.formatTimestamp(payment.timestamp)
         Log.d(TAG, """
-        ═══ PAGO RECIBIDO ═══
+        ═══ pago yape ═══
         Cliente: ${payment.name}
         Monto:   S/ ${"%.2f".format(payment.amount)}
         Código:  ${payment.securityCode}
@@ -173,82 +166,76 @@ class YapeNotificationListenerService : NotificationListenerService() {
 
     override fun onListenerConnected() {
         super.onListenerConnected()
-        Log.i(TAG, "✅ Servicio de notificaciones CONECTADO y listo para recibir pagos")
-        Log.d(TAG, "📁 Archivo CSV: ${storage.getFilePath()}")
-        Log.d(TAG, "📱 Versión Android: ${Build.VERSION.SDK_INT} (${Build.VERSION.RELEASE})")
+        Log.i(TAG, "Servicio de notificaciones CONECTADO y listo para recibir pagos")
+        Log.d(TAG, "csv: ${storage.getFilePath()}")
+        Log.d(TAG, "android version: ${Build.VERSION.SDK_INT} (${Build.VERSION.RELEASE})")
         
-        // Registrar BroadcastReceiver para escuchar cambios del switch
+        // BroadcastReceiver para escuchar cambios del switch
         registerToggleReceiver()
         
-        // Inicializar foreground service
+        // foreground service
         initializeForegroundService()
     }
     
     override fun onListenerDisconnected() {
         super.onListenerDisconnected()
-        Log.w(TAG, "⚠️ Servicio de notificaciones DESCONECTADO - Intentando reconectar...")
+        Log.w(TAG, " servicio de notificaciones DESCONECTADO - se intenta reconectar")
         
         // Desregistrar el receiver para evitar memory leaks
         try {
             unregisterReceiver(toggleReceiver)
-            Log.d(TAG, "📻 BroadcastReceiver desregistrado")
+            Log.d(TAG, "BroadcastReceiver desregistrado")
         } catch (e: IllegalArgumentException) {
             // Receiver no estaba registrado
         }
         
-        // Intentar reconectar automáticamente el servicio (API 24+)
+        // reconectar automáticamente el servicio (API 24+)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
             try {
                 requestRebind(ComponentName(this, YapeNotificationListenerService::class.java))
-                Log.d(TAG, "✅ Solicitud de reconexión enviada")
+                Log.d(TAG, "Solicitud de reconexión enviada")
             } catch (e: Exception) {
-                Log.e(TAG, "❌ Error al solicitar reconexión: ${e.message}")
+                Log.e(TAG, "error reconexión: ${e.message}")
             }
         } else {
-            Log.w(TAG, "⚠️ requestRebind() requiere Android 7.0+ (API 24)")
+            Log.w(TAG, " requestRebind() requiere Android 7.0+ (API 24)")
         }
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         super.onStartCommand(intent, flags, startId)
         // START_STICKY: Si el sistema mata el servicio, lo recrea automáticamente
-        Log.d(TAG, "🔄 onStartCommand ejecutado - Servicio marcado como STICKY")
+        Log.d(TAG, "onStartCommand ejecutado - Servicio marcado como STICKY")
         return START_STICKY
     }
     
-    /**
-     * Inicializa el servicio como Foreground Service si el usuario lo tiene habilitado
-     */
+    // servicio se inicia como Foreground Service si se activa
     private fun initializeForegroundService() {
         try {
-            // Crear el canal de notificación primero (necesario para Android 8.0+)
+            //canal de notificación
             notificationHelper.createNotificationChannel()
-            
-            // Verificar si el usuario tiene el servicio habilitado
+             
+            //verificar si el servicio habilitado
             if (isServiceEnabled()) {
                 startForegroundService()
                 acquireWakeLock()
-                Log.d(TAG, "🔔 Foreground service iniciado - Escuchando notificaciones")
+                Log.d(TAG, " service iniciado - escuchando notificaciones")
             } else {
                 releaseWakeLock()
-                Log.d(TAG, "🔕 Servicio deshabilitado por el usuario - No se escucharán notificaciones")
+                Log.d(TAG, "servicio deshabilitado - sin escuchar notificaciones")
             }
         } catch (e: Exception) {
-            Log.e(TAG, "❌ Error al inicializar foreground service: ${e.message}", e)
+            Log.e(TAG, "foreground service error: ${e.message}", e)
         }
     }
     
-    /**
-     * Verifica si el servicio está habilitado por el usuario (switch ON)
-     */
+    // switch on
     private fun isServiceEnabled(): Boolean {
         return prefs.getBoolean(PREF_SHOW_NOTIFICATION, false)  // Default: OFF
     }
     
-    /**
-     * Registra el BroadcastReceiver para escuchar cambios del switch
-     * Usamos RECEIVER_EXPORTED porque el broadcast viene de nuestra propia app (con setPackage)
-     */
+    //  BroadcastReceiver para escuchar cambios del switch
+
     private fun registerToggleReceiver() {
         val filter = IntentFilter(ACTION_TOGGLE_NOTIFICATION)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
@@ -259,18 +246,14 @@ class YapeNotificationListenerService : NotificationListenerService() {
         Log.d(TAG, "📻 BroadcastReceiver registrado")
     }
     
-    /**
-     * Inicia el foreground service con la notificación persistente
-     */
+    // servicio se inicia con la noti persistente
     private fun startForegroundService() {
         val notification = notificationHelper.buildServiceNotification()
         startForeground(NotificationHelper.NOTIFICATION_ID, notification)
-        Log.d(TAG, "🚀 Foreground service iniciado")
+        Log.d(TAG, "foreground serv iniciado")
     }
     
-    /**
-     * Detiene el foreground service (oculta la notificación)
-     */
+    // se detiene el servicio
     private fun stopForegroundService() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
             stopForeground(STOP_FOREGROUND_REMOVE)
@@ -278,7 +261,7 @@ class YapeNotificationListenerService : NotificationListenerService() {
             @Suppress("DEPRECATION")
             stopForeground(true)
         }
-        Log.d(TAG, "🛑 Foreground service detenido (notificación oculta)")
+        Log.d(TAG, "foreground service detenido")
     }
     
     /**
@@ -294,9 +277,7 @@ class YapeNotificationListenerService : NotificationListenerService() {
         }
     }
     
-    /**
-     * Adquiere un wake lock para mantener el CPU activo
-     */
+    // wake lock para mantener el CPU activo
     private fun acquireWakeLock() {
         try {
             if (wakeLock == null) {
@@ -310,24 +291,22 @@ class YapeNotificationListenerService : NotificationListenerService() {
             
             if (wakeLock?.isHeld == false) {
                 wakeLock?.acquire()
-                Log.d(TAG, "🔋 Wake lock adquirido")
+                Log.d(TAG, "wake lock adquirido")
             }
         } catch (e: Exception) {
-            Log.e(TAG, "❌ Error al adquirir wake lock: ${e.message}", e)
+            Log.e(TAG, "wake lock error: ${e.message}", e)
         }
     }
     
-    /**
-     * Libera el wake lock
-     */
+    // wake lock liberado
     private fun releaseWakeLock() {
         try {
             if (wakeLock?.isHeld == true) {
                 wakeLock?.release()
-                Log.d(TAG, "🔌 Wake lock liberado")
+                Log.d(TAG, "Wake lock liberado")
             }
         } catch (e: Exception) {
-            Log.e(TAG, "❌ Error al liberar wake lock: ${e.message}", e)
+            Log.e(TAG, " wake lock error liberacion: ${e.message}", e)
         }
     }
     
