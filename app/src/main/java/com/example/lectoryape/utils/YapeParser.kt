@@ -34,7 +34,7 @@ object YapeParser {
         if (matchResult != null) {
             // Es un Yape normal con código
             val (n, m, c) = matchResult.destructured
-            return procesarYape(sbn, title, n, m, c)
+            return procesarYape(sbn, title, n, m, c, "Yape")
         } 
         
         // 2. Intentar Regex Bancos (BCP, PLIN, etc.)
@@ -43,7 +43,7 @@ object YapeParser {
             // Es un Yape de Banco (Sin código)
             val (n, m) = matchResult.destructured
             Log.d("YapeParser", "✅ Encontrado patrón Banco (BCP/PLIN)")
-            return procesarYape(sbn, title, n, m, "SIN_CODIGO")
+            return procesarYape(sbn, title, n, m, "SIN_CODIGO", "Yape")
         }
 
         // 3. Intentar Regex Plin (Interbank)
@@ -55,14 +55,14 @@ object YapeParser {
                 title = "Plin"
             }
             Log.d("YapeParser", "✅ Encontrado patrón Plin")
-            return procesarYape(sbn, title, n, m, "SIN_CODIGO")
+            return procesarYape(sbn, title, n, m, "SIN_CODIGO", "Plin")
         } 
             
         Log.e("YapeParser", "❌ FALLÓ EL REGEX. No coincide con ningún patrón conocido.")
         return null
     }
 
-    private fun procesarYape(sbn: StatusBarNotification, title: String, nombre: String, montoStr: String, codigo: String): YapeNotificationRaw {
+    private fun procesarYape(sbn: StatusBarNotification, title: String, nombre: String, montoStr: String, codigo: String, walletType: String): YapeNotificationRaw {
         // Limpieza del monto
         val montoLimpio = montoStr.trim().replace(",", "").removeSuffix(".")
         val montoFinal = montoLimpio.toDoubleOrNull() ?: 0.0
@@ -73,7 +73,8 @@ object YapeParser {
             amount = montoFinal,
             timestamp = sbn.postTime,
             securityCode = codigo.trim(),
-            notificationId = sbn.id
+            notificationId = sbn.id,
+            walletType = walletType
         )
     }
 }
