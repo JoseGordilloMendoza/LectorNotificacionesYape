@@ -83,6 +83,61 @@ class MainActivity : AppCompatActivity() {
         storage = YapeNotificationStorage(this)
         firebaseUploader = FirebaseUploader(this)
 
+        // Verificar suscripción ANTES de inicializar la app
+        checkSubscription()
+    }
+
+    /* Verificacion de suscripcion de user
+    Si la prueba expiró o está inactiva, muestra un diálogo bloqueante.
+     */
+    private fun checkSubscription() {
+        val user = authManager.getCurrentUser()
+        if (user == null) {
+            navigateToLogin()
+            return
+        }
+
+        // Mostrar loading mientras verificamos
+        binding.root.alpha = 0.5f
+
+        com.google.firebase.firestore.FirebaseFirestore.getInstance()
+            .collection("users").document(user.uid)
+            .get()
+            .addOnSuccessListener { document ->
+                binding.root.alpha = 1.0f
+
+                if (document != null && document.exists()) {
+                    val subMap = document.get("subscription") as? Map<String, Any>
+                    val isActive = subMap?.get("isActive") as? Boolean ?: false
+                    val status = subMap?.get("status") as? String ?: "expired"
+
+                    if (isActive && status != "expired") {
+                        // ✅ Suscripción válida → Inicializar app
+                        android.util.Log.d("MainActivity", "sub activa: $status")
+                        initializeApp()
+                    } else {
+                        // ❌ Suscripción expirada → Bloquear
+                        android.util.Log.w("MainActivity", "sub expirada: isActive=$isActive, status=$status")
+                        showSubscriptionExpiredDialog()
+                    }
+                } else {
+                    // No tiene documento de usuario → tratar como expirado
+                    showSubscriptionExpiredDialog()
+                }
+            }
+            .addOnFailureListener { e ->
+                binding.root.alpha = 1.0f
+                android.util.Log.e("MainActivity", "Error verificando suscripción: ${e.message}")
+                // En caso de error de red, permitir uso (para no bloquear sin internet)
+                Toast.makeText(this, "⚠️ No se pudo verificar suscripción", Toast.LENGTH_SHORT).show()
+                initializeApp()
+            }
+    }
+
+    /**
+     * Inicializa toda la funcionalidad de la app (solo se llama si la suscripción es válida)
+     */
+    private fun initializeApp() {
         setupUI()
 
         try {
@@ -110,49 +165,50 @@ class MainActivity : AppCompatActivity() {
             android.util.Log.e("MainActivity", "❌ Error al cargar yapeos: ${e.message}", e)
         }
     }
+
+    /**
+     * Muestra un diálogo bloqueante cuando la suscripción ha expirado.
+     * Ofrece ir a la web para renovar o cerrar sesión.
+     */
+    private fun showSubscriptionExpiredDialog() {
+        AlertDialog.Builder(this)
+            .setTitle("⏰ Suscripción Expirada")
+            .setMessage("Tu período de prueba o suscripción ha finalizado.\n\nPara seguir usando la app, renueva tu plan desde nuestra página web.")
+            .setPositiveButton("🌐 Ir a la Web") { _, _ ->
+                openWebPortal()
+                // Después de abrir el navegador, cerrar sesión
+                performLogout()
+            }
+            .setNegativeButton("Cerrar Sesión") { _, _ ->
+                performLogout()
+            }
+            .setCancelable(false)
+            .show()
+    }
+
+    /**
+     * Abre el portal web de Yape Visualizer en el navegador
+     */
+    private fun openWebPortal() {
+        try {
+            val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://yapevisualizer.onrender.com"))
+            startActivity(intent)
+        } catch (e: Exception) {
+            Toast.makeText(this, "No se pudo abrir el navegador", Toast.LENGTH_SHORT).show()
+        }
+    }
     
     /**
      * Verifica si la app está exenta de optimización de batería
      * Si no lo está, muestra un diálogo para solicitarlo
      * También verifica AutoStart en Xiaomi
      */
+    /**
+     * Verifica si la app está exenta de optimización de batería
+     * Delega la lógica al BatteryOptimizationHelper
+     */
     private fun checkBatteryOptimization() {
-        // 1. Verificar AutoStart en Xiaomi (Es lo más crítico y oculto)
-        val manufacturer = Build.MANUFACTURER.lowercase()
-        if ("xiaomi" in manufacturer || "redmi" in manufacturer) {
-            val prefs = getSharedPreferences("miui_settings", Context.MODE_PRIVATE)
-            val alreadyAsked = prefs.getBoolean("autostart_asked", false)
-            
-            if (!alreadyAsked) {
-                AlertDialog.Builder(this)
-                    .setTitle("⚠️ Configuración Xiaomi Detectada")
-                    .setMessage("En teléfonos Xiaomi/Redmi es OBLIGATORIO activar el 'Inicio Automático' para que la app no se apague sola.\n\nAl presionar 'Ir a Configuración', busca esta app y activa el interruptor.")
-                    .setPositiveButton("Ir a Configuración") { _, _ ->
-                        com.example.lectoryape.utils.BatteryOptimizationHelper.checkAndRequestAutoStart(this)
-                        prefs.edit().putBoolean("autostart_asked", true).apply()
-                    }
-                    .setNeutralButton("Más tarde", null)
-                    .show()
-                return // Priorizamos esto sobre la batería normal
-            }
-        }
-
-        // 2. Verificar Optimización de Batería (Doze Mode)
-        if (!com.example.lectoryape.utils.BatteryOptimizationHelper.isIgnoringBatteryOptimizations(this)) {
-            android.util.Log.w("MainActivity", "⚠️ App NO está exenta de optimización de batería")
-            
-            // Mostrar diálogo explicativo
-            AlertDialog.Builder(this)
-                .setTitle("⚡ Optimización de Batería")
-                .setMessage("Para garantizar que SIEMPRE se capturen las notificaciones, es necesario seleccionar 'Sin Restricciones'.\n\n¿Deseas configurarlo ahora?")
-                .setPositiveButton("Sí") { _, _ ->
-                    com.example.lectoryape.utils.BatteryOptimizationHelper.requestIgnoreBatteryOptimizations(this)
-                }
-                .setNegativeButton("Después", null)
-                .show()
-        } else {
-            android.util.Log.d("MainActivity", "✅ App exenta de optimización de batería")
-        }
+        com.example.lectoryape.utils.BatteryOptimizationHelper.checkAndRequest(this)
     }
 
     override fun onCreateOptionsMenu(menu: Menu?): Boolean {
@@ -303,6 +359,9 @@ class MainActivity : AppCompatActivity() {
 
         // Botón para limpiar datos
         binding.btnClearData.setOnClickListener { confirmClearData() }
+
+        // Botón para abrir el portal web
+        binding.btnOpenWeb.setOnClickListener { openWebPortal() }
     }
     
     /**
@@ -329,7 +388,10 @@ class MainActivity : AppCompatActivity() {
                     .commit()
                 
                 withContext(Dispatchers.Main) {
-                    sendBroadcast(Intent(YapeNotificationListenerService.ACTION_TOGGLE_NOTIFICATION))
+                    // Broadcast con paquete explícito para garantizar entrega en Android 14+/OEMs
+                    val toggleIntent = Intent(YapeNotificationListenerService.ACTION_TOGGLE_NOTIFICATION)
+                    toggleIntent.setPackage(packageName)
+                    sendBroadcast(toggleIntent)
                     
                     if (isChecked && Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
                         try {
