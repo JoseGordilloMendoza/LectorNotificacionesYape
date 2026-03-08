@@ -16,7 +16,7 @@ data class YapeNotificationRaw(
     val timestamp: Long,
     val securityCode: String,
     val notificationId: Int,
-    val walletType: String = "Yape"
+    val walletType: String = "YAPE"
 ) {
     // csv, solo para local
     fun toCsvLine(): String {
