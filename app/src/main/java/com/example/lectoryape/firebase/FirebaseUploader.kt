@@ -49,17 +49,24 @@ class FirebaseUploader(private val context: Context) {
                 "branchId" to null,
                 "branchName" to null,
                 "timestamp" to notification.timestamp,
-                "walletType" to notification.walletType  // "Yape" o "Plin"
+                "wallet" to notification.walletType.uppercase()  // "YAPE" o "PLIN"
             )
             
-            // subcolección: usuario/yape_notifications
+            // id unico y no generado aleatoriamente
+            val uniqueId = "${notification.name}_${notification.amount}_${notification.timestamp}_${notification.walletType}"
+                .hashCode()
+                .toUInt()
+                .toString()
+            
+            // subcolección: user/yape_notifications
             firestore.collection("users")
                 .document(userId)
                 .collection(YAPEOS_SUBCOLLECTION)
-                .add(data)
+                .document(uniqueId)
+                .set(data)
                 .await()
             
-            Log.d(TAG, "uploaded a users/$userId/yape_notifications: ${notification.name} - S/${notification.amount} [${notification.walletType}]")
+            Log.d(TAG, "uploaded a users/$userId/yape_notifications [$uniqueId]: ${notification.name} - S/${notification.amount} [${notification.walletType}]")
             true
             
         } catch (e: Exception) {
