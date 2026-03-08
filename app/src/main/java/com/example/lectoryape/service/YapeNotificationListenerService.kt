@@ -27,6 +27,9 @@ class YapeNotificationListenerService : NotificationListenerService() {
     private val firebaseUploader by lazy { FirebaseUploader(applicationContext) }
     private val notificationHelper by lazy { NotificationHelper(applicationContext) }
     
+    //hash / set :V para evitar duplicados
+    private val processedNotifications = mutableSetOf<String>()
+    
     // SharedPreferences para leer la preferencia del usuario
     private val prefs: SharedPreferences by lazy {
         applicationContext.getSharedPreferences("yape_listener_prefs", Context.MODE_PRIVATE)
@@ -124,6 +127,13 @@ class YapeNotificationListenerService : NotificationListenerService() {
     // only yapey plin
     private fun processYapeNotification(sbn: StatusBarNotification) {
         try {
+            // Deduplicación: evitar reprocesar la misma notificación
+            val notifKey = "${sbn.packageName}_${sbn.id}_${sbn.postTime}"
+            if (!processedNotifications.add(notifKey)) {
+                Log.d(TAG, "notificacion duplicada, ignorando ps: $notifKey")
+                return
+            }
+
             val yapePlinPayment = YapeParser.parse(sbn)
 
             if (yapePlinPayment == null) {
