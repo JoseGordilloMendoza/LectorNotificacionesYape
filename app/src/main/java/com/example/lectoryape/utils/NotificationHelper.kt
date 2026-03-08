@@ -35,7 +35,7 @@ class NotificationHelper(private val context: Context) {
             val channel = NotificationChannel(
                 CHANNEL_ID,
                 CHANNEL_NAME,
-                NotificationManager.IMPORTANCE_LOW // LOW para que no haga ruido ni vibración
+                NotificationManager.IMPORTANCE_DEFAULT // DEFAULT para que sea visible en Xiaomi/Honor
             ).apply {
                 description = CHANNEL_DESCRIPTION
                 setShowBadge(false) // No mostrar badge en el ícono de la app
@@ -69,7 +69,7 @@ class NotificationHelper(private val context: Context) {
             .setSmallIcon(R.drawable.ic_notification)
             .setContentIntent(pendingIntent)
             .setOngoing(true) // No se puede descartar manualmente
-            .setPriority(NotificationCompat.PRIORITY_LOW) // Prioridad baja para no molestar
+            .setPriority(NotificationCompat.PRIORITY_DEFAULT) // DEFAULT para visibilidad en OEMs
             .setCategory(NotificationCompat.CATEGORY_SERVICE)
             .setAutoCancel(false)
             .build()
