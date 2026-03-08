@@ -34,7 +34,7 @@ object YapeParser {
         if (matchResult != null) {
             // Es un Yape normal con código
             val (n, m, c) = matchResult.destructured
-            return procesarYape(sbn, title, n, m, c, "Yape")
+            return procesarYape(sbn, title, n, m, c, "YAPE")
         } 
         
         // 2. Intentar Regex Bancos (BCP, PLIN, etc.)
@@ -43,7 +43,7 @@ object YapeParser {
             // Es un Yape de Banco (Sin código)
             val (n, m) = matchResult.destructured
             Log.d("YapeParser", "✅ Encontrado patrón Banco (BCP/PLIN)")
-            return procesarYape(sbn, title, n, m, "SIN_CODIGO", "Yape")
+            return procesarYape(sbn, title, n, m, "SIN_CODIGO", "YAPE")
         }
 
         // 3. Intentar Regex Plin (Interbank)
@@ -55,7 +55,7 @@ object YapeParser {
                 title = "Plin"
             }
             Log.d("YapeParser", "✅ Encontrado patrón Plin")
-            return procesarYape(sbn, title, n, m, "SIN_CODIGO", "Plin")
+            return procesarYape(sbn, title, n, m, "SIN_CODIGO", "PLIN")
         } 
             
         Log.e("YapeParser", "❌ FALLÓ EL REGEX. No coincide con ningún patrón conocido.")
