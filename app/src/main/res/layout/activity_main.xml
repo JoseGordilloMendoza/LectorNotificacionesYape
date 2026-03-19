@@ -32,12 +32,10 @@
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="A continuacion se muestran los yapeos registrados, recuerda que son los de la cuenta en la que iniciaste sesion"
+        android:text="El servicio de lectura de notificaciones se encargará de registrar automáticamente los Yapeos."
         android:textSize="14sp"
         android:textColor="#666666"
         android:layout_marginBottom="16dp"/>
-
-
 
     <!-- Estado del Permiso -->
     <androidx.cardview.widget.CardView
@@ -195,126 +193,17 @@
 
     </androidx.cardview.widget.CardView>
 
-    <!-- Botones de Acción -->
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:layout_marginTop="16dp"
-        android:layout_marginBottom="16dp">
-
         <Button
-            android:id="@+id/btnExportCsv"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text="📤 Exportar"
-            android:textSize="14sp"
-            android:backgroundTint="@color/purple_500"
-            android:layout_marginEnd="8dp"/>
-
-        <Button
-            android:id="@+id/btnViewCsv"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text="👁️ Ver CSV (LOCAL)"
-            android:textSize="14sp"
-            android:backgroundTint="@color/purple_500"
-            android:layout_marginStart="8dp"/>
-
-    </LinearLayout>
-
-    <!-- Botón para ir al Portal Web -->
-    <Button
-        android:id="@+id/btnOpenWeb"
-        android:layout_width="match_parent"
-        android:layout_height="52dp"
-        android:text="🌐 Ver en la Web"
-        android:textSize="15sp"
-        android:textStyle="bold"
-        android:backgroundTint="#00897B"
-        android:textColor="@color/white"
-        android:layout_marginBottom="8dp"/>
-
-    <Button
-        android:id="@+id/btnClearData"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="🗑️ Limpiar Datos"
-        android:textSize="14sp"
-        android:backgroundTint="#FF5252"
-        android:layout_marginBottom="16dp"/>
-
-    <!-- Última Notificación Capturada -->
-    <androidx.cardview.widget.CardView
-        android:id="@+id/cardLastNotification"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:elevation="4dp"
-        android:radius="12dp"
-        android:visibility="gone">
-
-        <LinearLayout
+            android:id="@+id/btnOpenWeb"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:padding="16dp">
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="📝 Última Notificación"
-                android:textSize="14sp"
-                android:textStyle="bold"
-                android:textColor="@color/black"
-                android:layout_marginBottom="8dp"/>
-
-            <TextView
-                android:id="@+id/tvLastNotificationTitle"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Título"
-                android:textSize="13sp"
-                android:textStyle="bold"
-                android:textColor="#333333"
-                android:layout_marginBottom="4dp"/>
-
-            <TextView
-                android:id="@+id/tvLastNotificationText"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Texto de la notificación"
-                android:textSize="12sp"
-                android:textColor="#666666"
-                android:layout_marginBottom="4dp"/>
-
-            <TextView
-                android:id="@+id/tvLastNotificationTime"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Hora"
-                android:textSize="11sp"
-                android:textColor="#999999"/>
-
-        </LinearLayout>
-
-    </androidx.cardview.widget.CardView>
-
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="📊 Yapeos registrados"
-        android:textSize="18sp"
-        android:textStyle="bold"
-        android:textColor="@color/black"
-        android:layout_marginTop="24dp"
-        android:layout_marginBottom="12dp"/>
-    <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/rvYapeos"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:nestedScrollingEnabled="false"/>
+            android:layout_height="52dp"
+            android:text="🌐 Ver en la Web"
+            android:textSize="15sp"
+            android:textStyle="bold"
+            android:backgroundTint="#00897B"
+            android:textColor="@color/white"
+            android:layout_marginTop="16dp"
+            android:layout_marginBottom="8dp"/>
 
 </LinearLayout>
     </ScrollView>
