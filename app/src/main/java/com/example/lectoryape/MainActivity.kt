@@ -312,23 +312,22 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    /** Actualiza el contador de notificaciones en la UI (desde Firebase) */
+    /** Actualiza el contador de notificaciones en la UI (desde Firebase, optimizado para no gastar lecturas) */
     private fun updateNotificationCount() {
         lifecycleScope.launch {
             try {
-                // Obtener conteo desde Firebase (filtrado por usuario)
-                val count = withContext(Dispatchers.IO) { firebaseUploader.getUserYapeos().size }
+                // Obtener conteo real desde Firebase (usa la nueva query Count que cuesta 1 lectura por cada 1000 yapeos)
+                val count = withContext(Dispatchers.IO) { firebaseUploader.countUserYapeos() }
 
                 binding.tvTransactionCount.text = count.toString()
 
                 android.util.Log.d(
                         "MainActivity",
-                        "📊 Contador actualizado: $count yapeos en Firebase"
+                        "📊 Contador actualizado: $count yapeos reales en Firebase"
                 )
             } catch (e: Exception) {
-                android.util.Log.e("MainActivity", "Error al actualizar contador: ${e.message}", e)
-                val count = storage.getNotificationCount()
-                binding.tvTransactionCount.text = count.toString()
+                android.util.Log.e("MainActivity", "Error al actualizar contador desde Firebase: ${e.message}", e)
+                binding.tvTransactionCount.text = "0"
             }
         }
     }

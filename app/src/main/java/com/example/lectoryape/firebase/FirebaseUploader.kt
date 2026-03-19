@@ -54,8 +54,8 @@ class FirebaseUploader(private val context: Context) {
                 "userEmail" to userEmail                 // Email del usuario
             )
             
-            // Subir a Firestore
-            firestore.collection(COLLECTION_NAME)
+            // Subir a Firestore (A la subcolección del usuario específico)
+            firestore.collection("users").document(userId).collection(COLLECTION_NAME)
                 .add(data)
                 .await()
             
@@ -85,26 +85,46 @@ class FirebaseUploader(private val context: Context) {
     }
     
     /**
-     * Obtiene los yapeos del usuario actual (filtrado por email)
+     * Cuenta los yapeos del usuario actual en Firebase usando Aggregate Query
+     */
+    suspend fun countUserYapeos(): Int {
+        return try {
+            val userId = authManager.getCurrentUser()?.uid
+            if (userId == null) return 0
+            
+            // Contar todos los documentos dentro de su propia subcolección
+            val snapshot = firestore.collection("users").document(userId).collection(COLLECTION_NAME)
+                .count()
+                .get(com.google.firebase.firestore.AggregateSource.SERVER)
+                .await()
+                
+            snapshot.count.toInt()
+        } catch (e: Exception) {
+            Log.e(TAG, "❌ Error al contar yapeos del usuario: ${e.message}", e)
+            0
+        }
+    }
+    
+    /**
+     * Obtiene los yapeos del usuario actual de su subcolección
      */
     suspend fun getUserYapeos(): List<Map<String, Any>> {
         return try {
-            val userEmail = authManager.getUserEmail()?.lowercase() // Normalizar a minúsculas
-            Log.d(TAG, "🔍 Buscando yapeos para email: $userEmail")
+            val userId = authManager.getCurrentUser()?.uid
+            Log.d(TAG, "🔍 Buscando yapeos para userId: $userId")
             
-            if (userEmail == null) {
-                Log.w(TAG, "⚠️ No hay usuario logueado o email es nulo")
+            if (userId == null) {
+                Log.w(TAG, "⚠️ No hay usuario logueado o userId es nulo")
                 return emptyList()
             }
             
-            // Nota: Podríamos filtrar por userId también, pero mantenemos email por compatibilidad
-            val snapshot = firestore.collection(COLLECTION_NAME)
-                .whereEqualTo("userEmail", userEmail)
+            // Ya no hace falta whereEqualTo, sabemos que estamos dentro del documento del usuario correcto
+            val snapshot = firestore.collection("users").document(userId).collection(COLLECTION_NAME)
                 .limit(100)
                 .get()
                 .await()
             
-            Log.d(TAG, "📊 Documentos encontrados: ${snapshot.size()} para query userEmail='$userEmail'")
+            Log.d(TAG, "📊 Documentos encontrados: ${snapshot.size()} en la subcolección de $userId")
             
             if (snapshot.isEmpty) {
                 Log.w(TAG, "⚠️ La consulta devolvió 0 documentos. Verifica mayúsculas/minúsculas en Firebase.")
