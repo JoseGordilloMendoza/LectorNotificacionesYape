@@ -19,6 +19,8 @@ import com.example.lectoryape.utils.NotificationHelper
 import com.example.lectoryape.utils.YapeParser
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 class YapeNotificationListenerService : NotificationListenerService() {
@@ -35,6 +37,9 @@ class YapeNotificationListenerService : NotificationListenerService() {
     // Wake lock para mantener el servicio activo
     private var wakeLock: PowerManager.WakeLock? = null
     
+    // Tarea encargada de enviar el Heartbeat a Firebase
+    private var heartbeatJob: Job? = null
+    
     // BroadcastReceiver para escuchar cuando el usuario cambia el switch
     private val toggleReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
@@ -47,9 +52,11 @@ class YapeNotificationListenerService : NotificationListenerService() {
                     if (isEnabled) {
                         acquireWakeLock()
                         startForegroundService()
+                        startHeartbeat()
                     } else {
                         stopForegroundService()
                         releaseWakeLock()
+                        stopHeartbeatAndSendOffline()
                     }
                 }
             }
@@ -179,11 +186,19 @@ class YapeNotificationListenerService : NotificationListenerService() {
         
         // Inicializar foreground service
         initializeForegroundService()
+        
+        // Empezar el heartbeat si el servicio está habilitado
+        if (isServiceEnabled()) {
+            startHeartbeat()
+        }
     }
     
     override fun onListenerDisconnected() {
         super.onListenerDisconnected()
         Log.w(TAG, "⚠️ Servicio de notificaciones DESCONECTADO - Intentando reconectar...")
+        
+        // Detener Heartbeat e informar offline
+        stopHeartbeatAndSendOffline()
         
         // Desregistrar el receiver para evitar memory leaks
         try {
@@ -284,9 +299,37 @@ class YapeNotificationListenerService : NotificationListenerService() {
         if (show) {
             startForegroundService()
             acquireWakeLock()
+            startHeartbeat()
         } else {
             stopForegroundService()
             releaseWakeLock()
+            stopHeartbeatAndSendOffline()
+        }
+    }
+    
+    /**
+     * Inicia un ciclo que envía un "pulso" a Firebase cada 60 segundos
+     */
+    private fun startHeartbeat() {
+        if (heartbeatJob?.isActive == true) return
+        
+        heartbeatJob = CoroutineScope(Dispatchers.IO).launch {
+            while (true) {
+                Log.d(TAG, "💓 Enviando pulso de vida (Heartbeat) a Firebase...")
+                firebaseUploader.sendHeartbeat(isOnline = true)
+                delay(60_000) // Esperar 60 segundos
+            }
+        }
+    }
+    
+    /**
+     * Detiene el Heartbeat e informa a Firebase que el servicio se cerró
+     */
+    private fun stopHeartbeatAndSendOffline() {
+        heartbeatJob?.cancel()
+        CoroutineScope(Dispatchers.IO).launch {
+            Log.d(TAG, "💔 Servicio detenido, avisando a Firebase (Offline)...")
+            firebaseUploader.sendHeartbeat(isOnline = false)
         }
     }
     
@@ -330,5 +373,6 @@ class YapeNotificationListenerService : NotificationListenerService() {
     override fun onDestroy() {
         super.onDestroy()
         releaseWakeLock()
+        stopHeartbeatAndSendOffline()
     }
 }
