@@ -182,4 +182,28 @@ class FirebaseUploader(private val context: Context) {
             Log.e(TAG, "error en sincronizacion usuario: ${e.message}", e)
         }
     }
+    
+    /**
+     * Envía un "Latido" a la base de datos para avisar a la web si la app
+     * está encendida y escuchando notificaciones.
+     */
+    suspend fun sendHeartbeat(isOnline: Boolean) {
+        try {
+            val userId = authManager.getCurrentUser()?.uid ?: return
+            
+            val data = hashMapOf(
+                "deviceOnline" to isOnline,
+                "lastHeartbeat" to com.google.firebase.firestore.FieldValue.serverTimestamp() // Usamos la hora oficial del servidor de Firebase
+            )
+            
+            // merge() asegura que solo se actualicen estos campos sin borrar el email, perfil o subscripción
+            firestore.collection("users").document(userId)
+                .set(data, com.google.firebase.firestore.SetOptions.merge())
+                .await()
+                
+            Log.d(TAG, "💓 Heartbeat enviado: isOnline=$isOnline")
+        } catch (e: Exception) {
+            Log.e(TAG, "❌ Error al enviar heartbeat: ${e.message}", e)
+        }
+    }
 }
