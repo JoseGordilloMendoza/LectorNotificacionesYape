@@ -17,6 +17,9 @@
     <!-- Permiso para mantener el dispositivo despierto (evita que se duerma) -->
     <uses-permission android:name="android.permission.WAKE_LOCK" />
 
+    <!-- Permiso para recibir el evento de arranque del sistema -->
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+
     <application
         android:allowBackup="true"
         android:dataExtractionRules="@xml/data_extraction_rules"
@@ -62,6 +65,16 @@
                 <action android:name="android.service.notification.NotificationListenerService" />
             </intent-filter>
         </service>
+
+        <!-- Receiver para reconectar el servicio tras un reinicio del teléfono -->
+        <receiver
+            android:name=".service.BootReceiver"
+            android:exported="true"
+            android:enabled="true">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+            </intent-filter>
+        </receiver>
     </application>
 
 </manifest>
