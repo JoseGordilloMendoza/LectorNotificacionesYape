@@ -21,11 +21,9 @@ import androidx.core.content.FileProvider
 import androidx.core.view.isVisible
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
-import com.example.lectoryape.adapters.YapeosAdapter
 import com.example.lectoryape.auth.FirebaseAuthManager
 import com.example.lectoryape.databinding.ActivityMainBinding
 import com.example.lectoryape.firebase.FirebaseUploader
-import com.example.lectoryape.models.YapeDisplayItem
 import com.example.lectoryape.service.YapeNotificationListenerService
 import com.example.lectoryape.storage.YapeNotificationStorage
 import java.io.File
@@ -40,7 +38,6 @@ class MainActivity : AppCompatActivity() {
     private lateinit var storage: YapeNotificationStorage
     private lateinit var authManager: FirebaseAuthManager
     private lateinit var firebaseUploader: FirebaseUploader
-    private lateinit var yapeosAdapter: YapeosAdapter
     
     // SharedPreferences para guardar la preferencia del switch
     private val prefs by lazy {
@@ -53,9 +50,6 @@ class MainActivity : AppCompatActivity() {
                 override fun onReceive(context: Context?, intent: Intent?) {
                     // Actualizar contador
                     updateNotificationCount()
-
-                    // Recargar lista de yapeos automáticamente
-                    loadYapeos()
                 }
             }
 
@@ -134,22 +128,8 @@ class MainActivity : AppCompatActivity() {
             }
     }
 
-    /**
-     * Inicializa toda la funcionalidad de la app (solo se llama si la suscripción es válida)
-     */
     private fun initializeApp() {
         setupUI()
-
-        try {
-            android.util.Log.d("MainActivity", "🔧 Inicializando RecyclerView...")
-            setupRecyclerView()
-        } catch (e: Exception) {
-            android.util.Log.e(
-                    "MainActivity",
-                    "❌ Error al inicializar RecyclerView: ${e.message}",
-                    e
-            )
-        }
 
         // displayUserInfo() call removed as it's now handled by Profile Dialog
         checkNotificationPermission()
@@ -158,12 +138,6 @@ class MainActivity : AppCompatActivity() {
         
         // Verificar y solicitar exención de optimización de batería
         checkBatteryOptimization()
-
-        try {
-            loadYapeos()
-        } catch (e: Exception) {
-            android.util.Log.e("MainActivity", "❌ Error al cargar yapeos: ${e.message}", e)
-        }
     }
 
     /**
@@ -346,19 +320,8 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun setupUI() {
-
-
         // Botón para abrir configuración de notificaciones
         binding.btnEnableNotifications.setOnClickListener { openNotificationSettings() }
-
-        // Botón para exportar CSV
-        binding.btnExportCsv.setOnClickListener { exportCsv() }
-
-        // Botón para ver CSV
-        binding.btnViewCsv.setOnClickListener { viewCsv() }
-
-        // Botón para limpiar datos
-        binding.btnClearData.setOnClickListener { confirmClearData() }
 
         // Botón para abrir el portal web
         binding.btnOpenWeb.setOnClickListener { openWebPortal() }
@@ -408,29 +371,14 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    /** Actualiza el contador de notificaciones en la UI (desde Firebase) */
+    /** Actualiza el contador de notificaciones en la UI (desde Firebase usando Aggregate Query) */
     private fun updateNotificationCount() {
         lifecycleScope.launch {
             try {
-                // Obtener conteo desde Firebase (filtrado por usuario)
-                val count = withContext(Dispatchers.IO) { firebaseUploader.getUserYapeos().size }
+                // Obtener solo el conteo desde Firebase (Cuesta muchísimo menos que descargar documentos)
+                val count = withContext(Dispatchers.IO) { firebaseUploader.countUserYapeos() }
 
                 binding.tvTransactionCount.text = count.toString()
-
-                val hasData = count > 0
-                binding.btnExportCsv.isEnabled = hasData
-                binding.btnViewCsv.isEnabled = hasData
-                binding.btnClearData.isEnabled = hasData
-
-                if (!hasData) {
-                    binding.btnExportCsv.alpha = 0.5f
-                    binding.btnViewCsv.alpha = 0.5f
-                    binding.btnClearData.alpha = 0.5f
-                } else {
-                    binding.btnExportCsv.alpha = 1.0f
-                    binding.btnViewCsv.alpha = 1.0f
-                    binding.btnClearData.alpha = 1.0f
-                }
 
                 android.util.Log.d(
                         "MainActivity",
@@ -438,88 +386,12 @@ class MainActivity : AppCompatActivity() {
                 )
             } catch (e: Exception) {
                 android.util.Log.e("MainActivity", "Error al actualizar contador: ${e.message}", e)
-                val count = storage.getNotificationCount()
-                binding.tvTransactionCount.text = count.toString()
+                binding.tvTransactionCount.text = "0"
             }
         }
     }
 
-    /** Exporta el CSV usando el diálogo de compartir de Android */
-    private fun exportCsv() {
-        if (!storage.fileExists()) {
-            Toast.makeText(this, "No hay datos para exportar", Toast.LENGTH_SHORT).show()
-            return
-        }
 
-        try {
-            val csvFile = File(storage.getFilePath())
-            val uri: Uri = FileProvider.getUriForFile(this, "${packageName}.fileprovider", csvFile)
-
-            val shareIntent =
-                    Intent(Intent.ACTION_SEND).apply {
-                        type = "text/csv"
-                        putExtra(Intent.EXTRA_STREAM, uri)
-                        putExtra(Intent.EXTRA_SUBJECT, "Notificaciones de Yape")
-                        putExtra(
-                                Intent.EXTRA_TEXT,
-                                "Archivo CSV con ${storage.getNotificationCount()} notificaciones de Yape"
-                        )
-                        addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-                    }
-
-            startActivity(Intent.createChooser(shareIntent, "Exportar CSV"))
-        } catch (e: Exception) {
-            Toast.makeText(this, "Error al exportar: ${e.message}", Toast.LENGTH_SHORT).show()
-        }
-    }
-
-    /** Muestra el contenido del CSV en un diálogo */
-    private fun viewCsv() {
-        if (!storage.fileExists()) {
-            Toast.makeText(this, "No hay datos para ver", Toast.LENGTH_SHORT).show()
-            return
-        }
-
-        val content = storage.getAllNotificationsAsText()
-        val lines = content.lines()
-
-        val preview =
-                if (lines.size > 20) {
-                    lines.take(20).joinToString("\n") + "\n\n... (${lines.size - 20} líneas más)"
-                } else {
-                    content
-                }
-
-        AlertDialog.Builder(this)
-                .setTitle("📄 Contenido del CSV (${storage.getNotificationCount()} notificaciones)")
-                .setMessage(preview)
-                .setPositiveButton("Cerrar", null)
-                .setNeutralButton("Exportar") { _, _ -> exportCsv() }
-                .show()
-    }
-
-    /** Confirma antes de limpiar todos los datos */
-    private fun confirmClearData() {
-        AlertDialog.Builder(this)
-                .setTitle("⚠️ Confirmar")
-                .setMessage(
-                        "¿Estás seguro de eliminar todas las ${storage.getNotificationCount()} notificaciones guardadas?\n\nEsta acción no se puede deshacer."
-                )
-                .setPositiveButton("Eliminar") { _, _ -> clearData() }
-                .setNegativeButton("Cancelar", null)
-                .show()
-    }
-
-    /** Elimina todos los datos */
-    private fun clearData() {
-        val success = storage.clearAll()
-        if (success) {
-            Toast.makeText(this, "✅ Datos eliminados", Toast.LENGTH_SHORT).show()
-            updateNotificationCount()
-        } else {
-            Toast.makeText(this, "❌ Error al eliminar datos", Toast.LENGTH_SHORT).show()
-        }
-    }
 
     /** Verifica si el servicio de notificaciones está habilitado */
     private fun checkNotificationPermission() {
@@ -585,48 +457,5 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun setupRecyclerView() {
-        yapeosAdapter = YapeosAdapter()
-        binding.rvYapeos.apply {
-            layoutManager = LinearLayoutManager(this@MainActivity)
-            adapter = yapeosAdapter
-        }
-    }
-    
-    private fun loadYapeos() {
-        lifecycleScope.launch {
-            try {
-                android.util.Log.d("MainActivity", "🔍 Iniciando carga de yapeos...")
 
-                val yapeos = withContext(Dispatchers.IO) { firebaseUploader.getUserYapeos() }
-
-                val displayItems =
-                        yapeos.map { data ->
-                            // Leer campos del Firebase (Soporte para estructura Nueva y Antigua)
-                            val name = (data["senderName"] as? String) ?: (data["text"] as? String) ?: "Desconocido"
-                            
-                            val amount = when(val a = data["amount"] ?: data["bigText"]) {
-                                is Double -> a
-                                is Long -> a.toDouble()
-                                else -> 0.0
-                            }
-                            
-                            val title = data["title"] as? String ?: "Yape"
-                            val fechaStr = (data["fecha"] as? String) ?: (data["timestamp"] as? String) ?: ""
-
-                            YapeDisplayItem(
-                                monto = "S/ %.2f".format(java.util.Locale.US, amount), // Formatear como moneda
-                                texto = "$name te envió un pago",  // Texto descriptivo
-                                fecha = fechaStr,  // Ya viene formateado de Firebase
-                                timestamp = 0L  // No necesitamos ordenar, Firebase ya lo hace
-                            )
-                        }
-
-                yapeosAdapter.updateYapeos(displayItems)
-                android.util.Log.d("MainActivity", "✅ RecyclerView actualizado con ${displayItems.size} yapeos")
-            } catch (e: Exception) {
-                android.util.Log.e("MainActivity", "❌ Error al cargar yapeos: ${e.message}", e)
-            }
-        }
-    }
 }
