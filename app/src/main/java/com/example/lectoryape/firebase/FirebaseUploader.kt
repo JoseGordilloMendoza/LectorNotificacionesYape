@@ -92,6 +92,27 @@ class FirebaseUploader(private val context: Context) {
     }
     
     /**
+     * Cuenta los yapeos y plins del usuario actual en Firebase usando Aggregate Query
+     */
+    suspend fun countUserYapeos(): Int {
+        return try {
+            val userId = authManager.getCurrentUser()?.uid
+            if (userId == null) return 0
+            
+            // Contar todos los documentos dentro de su propia subcolección
+            val snapshot = firestore.collection("users").document(userId).collection(YAPEOS_SUBCOLLECTION)
+                .count()
+                .get(com.google.firebase.firestore.AggregateSource.SERVER)
+                .await()
+                
+            snapshot.count.toInt()
+        } catch (e: Exception) {
+            Log.e(TAG, "❌ Error al contar notificaciones del usuario: ${e.message}", e)
+            0
+        }
+    }
+
+    /**
     yapeos del usuario actual
      */
     suspend fun getUserYapeos(): List<Map<String, Any>> {
