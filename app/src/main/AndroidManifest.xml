@@ -19,6 +19,9 @@
     
     <!-- Permiso para mantener el dispositivo despierto (evita que se duerma) -->
     <uses-permission android:name="android.permission.WAKE_LOCK" />
+    
+    <!-- Permiso para despertar la app cuando el celular se reinicie -->
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
 
     <application
         android:allowBackup="true"
@@ -54,6 +57,17 @@
                 android:name="android.support.FILE_PROVIDER_PATHS"
                 android:resource="@xml/file_paths" />
         </provider>
+
+        <!-- Receiver para encender el servicio automáticamente después de un reinicio si estaba activo -->
+        <receiver
+            android:name=".service.BootReceiver"
+            android:enabled="true"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="android.intent.action.QUICKBOOT_POWERON" />
+            </intent-filter>
+        </receiver>
 
         <!-- Servicio para leer notificaciones -->
         <service
