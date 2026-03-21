@@ -312,9 +312,9 @@ class YapeNotificationListenerService : NotificationListenerService() {
         
         heartbeatJob = CoroutineScope(Dispatchers.IO).launch {
             while (true) {
-                Log.d(TAG, "💓 Enviando pulso de vida (Heartbeat) a Firebase...")
+                Log.d(TAG, "💓 Enviando pulso de vida (Heartbeat) a Firebase (cada 5 minutos)...")
                 firebaseUploader.sendHeartbeat(isOnline = true)
-                delay(60_000) // Esperar 60 segundos
+                delay(300_000) // Esperar 5 minutos (300,000 ms)
             }
         }
     }
