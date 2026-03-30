@@ -20,6 +20,8 @@ import com.example.lectoryape.utils.YapeParser
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
@@ -39,6 +41,9 @@ class YapeNotificationListenerService : NotificationListenerService() {
     
     // Wake lock para mantener el servicio activo
     private var wakeLock: PowerManager.WakeLock? = null
+    
+    // Scope con lifecycle: se cancela en onDestroy para evitar memory leaks
+    private val serviceScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
     
     // Tarea encargada de enviar el Heartbeat a Firebase
     private var heartbeatJob: Job? = null
@@ -68,8 +73,8 @@ class YapeNotificationListenerService : NotificationListenerService() {
 
     companion object {
         private const val TAG = "YapeNotificationListener"
-        // debuggeo xd
-        private const val DEBUG_MODE = true
+        // Cambiar a true solo para sesiones de debugging con ADB
+        private const val DEBUG_MODE = false
         
         // package de yape
         private const val YAPE_PACKAGE = "com.bcp.innovacxion.yapeapp"
@@ -131,14 +136,21 @@ class YapeNotificationListenerService : NotificationListenerService() {
     """.trimIndent())
     }
     
-    // only yapey plin
+    // Solo Yape y Plin (cuando DEBUG_MODE=false)
     private fun processYapeNotification(sbn: StatusBarNotification) {
         try {
             // Deduplicación: evitar reprocesar la misma notificación
             val notifKey = "${sbn.packageName}_${sbn.id}_${sbn.postTime}"
             if (!processedNotifications.add(notifKey)) {
-                Log.d(TAG, "notificacion duplicada, ignorando ps: $notifKey")
+                Log.d(TAG, "notificacion duplicada, ignorando: $notifKey")
                 return
+            }
+            
+            // Prevenir memory leak: limpiar entradas antiguas si supera 200
+            if (processedNotifications.size > 200) {
+                val oldest = processedNotifications.take(100)
+                processedNotifications.removeAll(oldest.toSet())
+                Log.d(TAG, "Cache de notificaciones limpiada (200 → 100)")
             }
 
             val yapePlinPayment = YapeParser.parse(sbn)
@@ -156,8 +168,8 @@ class YapeNotificationListenerService : NotificationListenerService() {
                 sendBroadcast(Intent(ACTION_NOTIFICATION_SAVED))
             }
 
-            // subir a Firebase
-            CoroutineScope(Dispatchers.IO).launch {
+            // subir a Firebase usando el scope del servicio (tiene lifecycle)
+            serviceScope.launch {
                 try {
                     firebaseUploader.uploadNotification(yapePlinPayment)
                 } catch (e: Exception) {
@@ -305,14 +317,17 @@ class YapeNotificationListenerService : NotificationListenerService() {
     }
     
     /**
-     * Inicia un ciclo que envía un "pulso" a Firebase cada 60 segundos
+     * Inicia un ciclo que envía un "pulso" a Firebase cada 5 minutos.
+     * También renueva el wakeLock en cada ciclo para que no expire (timeout: 10min).
      */
     private fun startHeartbeat() {
         if (heartbeatJob?.isActive == true) return
         
-        heartbeatJob = CoroutineScope(Dispatchers.IO).launch {
+        heartbeatJob = serviceScope.launch {
             while (true) {
                 Log.d(TAG, "💓 Enviando pulso de vida (Heartbeat) a Firebase (cada 5 minutos)...")
+                // Renovar wakeLock en cada ciclo (nuestro timeout es 10min, el ciclo es 5min)
+                acquireWakeLock()
                 firebaseUploader.sendHeartbeat(isOnline = true)
                 delay(300_000) // Esperar 5 minutos (300,000 ms)
             }
@@ -324,13 +339,15 @@ class YapeNotificationListenerService : NotificationListenerService() {
      */
     private fun stopHeartbeatAndSendOffline() {
         heartbeatJob?.cancel()
-        CoroutineScope(Dispatchers.IO).launch {
+        // Usar serviceScope para que esté correctamente supervisado
+        serviceScope.launch {
             Log.d(TAG, "💔 Servicio detenido, avisando a Firebase (Offline)...")
             firebaseUploader.sendHeartbeat(isOnline = false)
         }
     }
     
     // wake lock para mantener el CPU activo
+    // Timeout de 10 minutos: el heartbeat lo renueva periódicamente antes que expire
     private fun acquireWakeLock() {
         try {
             if (wakeLock == null) {
@@ -343,8 +360,8 @@ class YapeNotificationListenerService : NotificationListenerService() {
             }
             
             if (wakeLock?.isHeld == false) {
-                wakeLock?.acquire()
-                Log.d(TAG, "wake lock adquirido")
+                wakeLock?.acquire(10 * 60 * 1000L) // 10 minutos máximo (seguridad)
+                Log.d(TAG, "wake lock adquirido (timeout: 10min)")
             }
         } catch (e: Exception) {
             Log.e(TAG, "wake lock error: ${e.message}", e)
@@ -365,7 +382,16 @@ class YapeNotificationListenerService : NotificationListenerService() {
     
     override fun onDestroy() {
         super.onDestroy()
+        // Desregistrar el receiver para evitar IllegalArgumentException
+        try {
+            unregisterReceiver(toggleReceiver)
+        } catch (e: IllegalArgumentException) {
+            // Ya estaba desregistrado (p. ej. si onListenerDisconnected lo hizo antes)
+        }
         releaseWakeLock()
         stopHeartbeatAndSendOffline()
+        // Cancelar el scope del servicio: libera todos los coroutines activos
+        serviceScope.cancel()
+        Log.d(TAG, "🛑 Servicio destruido: recursos liberados")
     }
 }
