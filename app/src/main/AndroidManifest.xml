@@ -79,6 +79,10 @@
             <intent-filter>
                 <action android:name="android.service.notification.NotificationListenerService" />
             </intent-filter>
+            <!-- Requerido por Android 14+ para foregroundServiceType="specialUse" -->
+            <property
+                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+                android:value="notification_listener"/>
         </service>
     </application>
 
