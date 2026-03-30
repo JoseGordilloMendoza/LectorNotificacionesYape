@@ -307,6 +307,18 @@ class MainActivity : AppCompatActivity() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N && isNotificationServiceEnabled()) {
             requestServiceRebindIfNeeded()
         }
+        
+        // ServiceWatchdog: si el switch está ON y el servicio pudo haber muerto,
+        // re-enviar el broadcast de activación. El receiver en el servicio lo atenderá
+        // si sigue vivo; si no, el requestRebind anterior lo despertará y luego onListenerConnected
+        // lo re-registrará para futuros cambios de switch.
+        val isSwitchOn = prefs.getBoolean(YapeNotificationListenerService.PREF_SHOW_NOTIFICATION, false)
+        if (isSwitchOn && isNotificationServiceEnabled()) {
+            val watchdogIntent = Intent(YapeNotificationListenerService.ACTION_TOGGLE_NOTIFICATION)
+            watchdogIntent.setPackage(packageName)
+            sendBroadcast(watchdogIntent)
+            android.util.Log.d("MainActivity", "🐕 Watchdog: broadcast de activación enviado en onResume")
+        }
     }
 
     override fun onPause() {
