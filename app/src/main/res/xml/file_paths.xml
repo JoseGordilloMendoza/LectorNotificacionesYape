@@ -4,4 +4,9 @@
     <external-files-path 
         name="yape_files" 
         path="." />
+    
+    <!-- Permite compartir APKs descargados en caché interna para actualizaciones OTA -->
+    <cache-path
+        name="apk_updates"
+        path="updates/" />
 </paths>

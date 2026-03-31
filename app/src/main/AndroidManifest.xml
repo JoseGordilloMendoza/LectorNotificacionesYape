@@ -23,6 +23,9 @@
     <!-- Permiso para despertar la app cuando el celular se reinicie -->
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
 
+    <!-- Permiso para instalar APKs descargados (Android 8.0+) - necesario para actualizaciones OTA -->
+    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
+
     <application
         android:allowBackup="true"
         android:dataExtractionRules="@xml/data_extraction_rules"
