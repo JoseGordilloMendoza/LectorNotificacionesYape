@@ -1,9 +1,19 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
     <!-- Base application theme. -->
     <style name="Base.Theme.LectorYape" parent="Theme.Material3.DayNight.NoActionBar">
-        <!-- Customize your light theme here. -->
-        <!-- <item name="colorPrimary">@color/my_light_primary</item> -->
+        <item name="colorPrimary">#5C35A0</item>
+        <item name="colorOnPrimary">#FFFFFF</item>
+        <item name="colorPrimaryVariant">#3700B3</item>
     </style>
 
     <style name="Theme.LectorYape" parent="Base.Theme.LectorYape" />
+
+    <!-- Toolbar con fondo morado y texto/iconos blancos -->
+    <style name="ToolbarTheme" parent="ThemeOverlay.MaterialComponents.Dark.ActionBar">
+        <item name="android:textColorPrimary">#FFFFFF</item>
+        <item name="android:textColorSecondary">#FFFFFF</item>
+        <!-- hace que el ícono de los 3 puntos (overflow) sea blanco -->
+        <item name="colorControlNormal">#FFFFFF</item>
+    </style>
+
 </resources>
