@@ -1,0 +1,211 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.cardview.widget.CardView
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    app:cardCornerRadius="20dp"
+    app:cardBackgroundColor="#FFFFFF"
+    app:cardElevation="0dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
+
+        <!-- HEADER OSCURO con ícono y título -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:background="#1A1A2E"
+            android:padding="24dp"
+            android:gravity="center_horizontal">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="📦"
+                android:textSize="36sp"
+                android:layout_marginBottom="8dp"/>
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Actualizaciones"
+                android:textSize="20sp"
+                android:textStyle="bold"
+                android:textColor="#FFFFFF"
+                android:letterSpacing="0.05"/>
+
+            <TextView
+                android:id="@+id/tvDialogStatus"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="✅ Tienes la versión más reciente"
+                android:textSize="12sp"
+                android:textColor="#A0A8CC"
+                android:layout_marginTop="4dp"/>
+
+        </LinearLayout>
+
+        <!-- CUERPO BLANCO -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="20dp">
+
+            <!-- Fila de versiones (Tu versión vs Última) -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:layout_marginBottom="16dp">
+
+                <!-- Columna: Tu versión -->
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:orientation="vertical"
+                    android:background="#F4F0FF"
+                    android:padding="12dp"
+                    android:gravity="center_horizontal">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Tu versión"
+                        android:textSize="11sp"
+                        android:textColor="#888888"
+                        android:layout_marginBottom="4dp"/>
+
+                    <TextView
+                        android:id="@+id/tvDialogCurrentVersion"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="v1.7"
+                        android:textSize="22sp"
+                        android:textStyle="bold"
+                        android:textColor="#3700B3"/>
+
+                    <TextView
+                        android:id="@+id/tvDialogCurrentBuild"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="build 7"
+                        android:textSize="10sp"
+                        android:textColor="#AAAAAA"/>
+                </LinearLayout>
+
+                <!-- Flecha separadora -->
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center_vertical"
+                    android:text="→"
+                    android:textSize="20sp"
+                    android:textColor="#CCCCCC"
+                    android:paddingStart="8dp"
+                    android:paddingEnd="8dp"/>
+
+                <!-- Columna: Última versión -->
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:orientation="vertical"
+                    android:background="#F0FFF8"
+                    android:padding="12dp"
+                    android:gravity="center_horizontal">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Última versión"
+                        android:textSize="11sp"
+                        android:textColor="#888888"
+                        android:layout_marginBottom="4dp"/>
+
+                    <TextView
+                        android:id="@+id/tvDialogLatestVersion"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="v1.7"
+                        android:textSize="22sp"
+                        android:textStyle="bold"
+                        android:textColor="#00897B"/>
+
+                    <TextView
+                        android:id="@+id/tvDialogLatestBuild"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="build 7"
+                        android:textSize="10sp"
+                        android:textColor="#AAAAAA"/>
+                </LinearLayout>
+
+            </LinearLayout>
+
+            <!-- Separador -->
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="1dp"
+                android:background="#F0F0F0"
+                android:layout_marginBottom="14dp"/>
+
+            <!-- Notas de la versión -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="📋 Novedades"
+                android:textSize="13sp"
+                android:textStyle="bold"
+                android:textColor="#333333"
+                android:layout_marginBottom="6dp"/>
+
+            <TextView
+                android:id="@+id/tvDialogReleaseNotes"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Sin notas disponibles"
+                android:textSize="13sp"
+                android:textColor="#555555"
+                android:lineSpacingExtra="3dp"
+                android:background="#FAFAFA"
+                android:padding="12dp"
+                android:layout_marginBottom="20dp"/>
+
+            <!-- Botón principal (Instalar / Cerrar) -->
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnDialogAction"
+                android:layout_width="match_parent"
+                android:layout_height="48dp"
+                android:text="Cerrar"
+                android:textSize="14sp"
+                android:textStyle="bold"
+                android:textColor="#FFFFFF"
+                app:backgroundTint="#7C4DFF"
+                app:cornerRadius="12dp"
+                android:layout_marginBottom="8dp"/>
+
+            <!-- Botón secundario (Después / oculto) -->
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnDialogDismiss"
+                android:layout_width="match_parent"
+                android:layout_height="40dp"
+                android:text="Más tarde"
+                android:textSize="13sp"
+                android:textColor="#888888"
+                android:visibility="gone"
+                app:backgroundTint="@android:color/transparent"
+                app:strokeColor="#E0E0E0"
+                app:strokeWidth="1dp"
+                app:cornerRadius="12dp"/>
+
+        </LinearLayout>
+
+    </LinearLayout>
+
+</androidx.cardview.widget.CardView>

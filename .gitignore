@@ -13,3 +13,6 @@
 .externalNativeBuild
 .cxx
 local.properties
+
+# Firebase - NUNCA subir al repositorio (contiene API keys privadas)
+google-services.json

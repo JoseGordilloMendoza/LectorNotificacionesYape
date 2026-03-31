@@ -12,8 +12,8 @@ android {
         applicationId = "com.example.lectoryape"
         minSdk = 24
         targetSdk = 36
-        versionCode = 6
-        versionName = "1.6"
+        versionCode = 8
+        versionName = "1.8"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -70,6 +70,12 @@ dependencies {
     
     // Firebase Firestore (con versión explícita)
     implementation("com.google.firebase:firebase-firestore-ktx:24.10.0")
+    
+    // Firebase Storage (para descargar APKs de actualización)
+    implementation("com.google.firebase:firebase-storage-ktx:20.3.0")
+    
+    // Coil: carga de imágenes (foto de perfil Google)
+    implementation("io.coil-kt:coil:2.6.0")
     
     // Coroutines
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")
