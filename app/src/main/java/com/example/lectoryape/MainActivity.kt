@@ -31,6 +31,9 @@ import java.util.Locale
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+// Coil - carga de imágenes (foto de perfil Google)
+import coil.load
+import coil.transform.CircleCropTransformation
 
 class MainActivity : AppCompatActivity() {
 
@@ -38,6 +41,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var storage: YapeNotificationStorage
     private lateinit var authManager: FirebaseAuthManager
     private lateinit var firebaseUploader: FirebaseUploader
+    private lateinit var appUpdater: com.example.lectoryape.utils.AppUpdater
     
     // SharedPreferences para guardar la preferencia del switch
     private val prefs by lazy {
@@ -76,6 +80,7 @@ class MainActivity : AppCompatActivity() {
 
         storage = YapeNotificationStorage(this)
         firebaseUploader = FirebaseUploader(this)
+        appUpdater = com.example.lectoryape.utils.AppUpdater(this)
 
         // Verificar suscripción ANTES de inicializar la app
         checkSubscription()
@@ -138,6 +143,9 @@ class MainActivity : AppCompatActivity() {
         
         // Verificar y solicitar exención de optimización de batería
         checkBatteryOptimization()
+
+        // Verificar si hay una actualización OTA disponible (silencioso, no bloquea la UI)
+        appUpdater.checkForUpdates()
     }
 
     /**
@@ -196,6 +204,10 @@ class MainActivity : AppCompatActivity() {
                 showProfileDialog()
                 true
             }
+            R.id.action_updates -> {
+                appUpdater.showVersionInfoDialog()
+                true
+            }
             else -> super.onOptionsItemSelected(item)
         }
     }
@@ -205,65 +217,90 @@ class MainActivity : AppCompatActivity() {
         val dialog = AlertDialog.Builder(this)
             .setView(dialogView)
             .create()
-        
+
         // Referencias a vistas
-        val ivPhoto = dialogView.findViewById<android.widget.ImageView>(R.id.ivProfilePhoto)
-        val tvName = dialogView.findViewById<android.widget.TextView>(R.id.tvProfileName)
-        val tvEmail = dialogView.findViewById<android.widget.TextView>(R.id.tvProfileEmail)
-        val tvStatus = dialogView.findViewById<android.widget.TextView>(R.id.tvProfileStatus)
-        val btnLogout = dialogView.findViewById<com.google.android.material.button.MaterialButton>(R.id.btnProfileLogout)
-        
-        // Cargar datos básicos de Auth (Usando nuestro Manager)
+        val ivPhoto        = dialogView.findViewById<android.widget.ImageView>(R.id.ivProfilePhoto)
+        val tvName         = dialogView.findViewById<android.widget.TextView>(R.id.tvProfileName)
+        val tvEmail        = dialogView.findViewById<android.widget.TextView>(R.id.tvProfileEmail)
+        val tvStatus       = dialogView.findViewById<android.widget.TextView>(R.id.tvProfileStatus)
+        val tvRole         = dialogView.findViewById<android.widget.TextView>(R.id.tvProfileRole)
+        val tvCreatedAt    = dialogView.findViewById<android.widget.TextView>(R.id.tvProfileCreatedAt)
+        val tvTrialEnd     = dialogView.findViewById<android.widget.TextView>(R.id.tvProfileTrialEnd)
+        val btnLogout      = dialogView.findViewById<com.google.android.material.button.MaterialButton>(R.id.btnProfileLogout)
+
         val user = authManager.getCurrentUser()
+
         if (user != null) {
-            tvName.text = user.displayName ?: "Usuario"
-            tvEmail.text = user.email
-            // Como no tenemos Glide, dejamos el icono por defecto
-        }
-        
-        // Obtener estado de suscripción desde Firestore
-        if (user != null) {
+            // Datos básicos desde Firebase Auth
+            tvName.text  = user.displayName ?: "Usuario"
+            tvEmail.text = user.email ?: "—"
+
+            // Cargar foto de Google con Coil (si existe)
+            val photoUrl = user.photoUrl
+            if (photoUrl != null) {
+                ivPhoto.load(photoUrl) {
+                    crossfade(true)
+                    placeholder(R.drawable.ic_person)
+                    error(R.drawable.ic_person)
+                    transformations(CircleCropTransformation())
+                }
+            }
+
+            // Datos de Firestore (suscripción, rol, fechas)
             tvStatus.text = "Cargando..."
             com.google.firebase.firestore.FirebaseFirestore.getInstance()
                 .collection("users").document(user.uid)
                 .get()
                 .addOnSuccessListener { document ->
                     if (document != null && document.exists()) {
-                        val subMap = document.get("subscription") as? Map<String, Any>
-                        val status = subMap?.get("status") as? String ?: "Free"
-                        val planName = subMap?.get("planName") as? String ?: "Básico"
-                        
-                        // Capitalizar primera letra
-                        val statusDisplay = status.substring(0, 1).uppercase() + status.substring(1)
-                        tvStatus.text = "$planName ($statusDisplay)"
-                        
-                        // Color según estado
-                        if (status == "trial" || status == "active") {
-                            tvStatus.setBackgroundColor(android.graphics.Color.parseColor("#4CAF50")) // Verde
-                        } else {
-                            tvStatus.setBackgroundColor(android.graphics.Color.parseColor("#D32F2F")) // Rojo
-                        }
+                        val subMap   = document.get("subscription") as? Map<String, Any>
+                        val status   = subMap?.get("status")   as? String ?: "expired"
+                        val planName = subMap?.get("planName") as? String ?: "Sin plan"
+                        val trialEnd = subMap?.get("trialEndDate") as? String
+                        val role     = document.getString("role") ?: "owner"
+                        val createdAt = document.getString("createdAt")
+
+                        // Badge de suscripción
+                        val statusDisplay = status.replaceFirstChar { it.uppercaseChar() }
+                        tvStatus.text = "$planName · $statusDisplay"
+                        val badgeColor = if (status == "trial" || status == "active") "#4CAF50" else "#D32F2F"
+                        tvStatus.backgroundTintList = android.content.res.ColorStateList.valueOf(
+                            android.graphics.Color.parseColor(badgeColor)
+                        )
+
+                        // Rol
+                        tvRole.text = role.replaceFirstChar { it.uppercaseChar() }
+
+                        // Fecha de registro (solo la fecha, sin la hora)
+                        tvCreatedAt.text = createdAt?.take(10) ?: "—"
+
+                        // Fecha de vencimiento de prueba
+                        tvTrialEnd.text = trialEnd?.take(10) ?: "—"
+
                     } else {
                         tvStatus.text = "Sin Plan"
+                        tvRole.text   = "—"
                     }
                 }
                 .addOnFailureListener {
                     tvStatus.text = "Error al cargar"
                 }
         } else {
-             tvStatus.text = "No autenticado"
+            tvStatus.text = "No autenticado"
         }
 
-        // Configurar Botón Salir
+        // Botón Cerrar Sesión
         btnLogout.setOnClickListener {
             dialog.dismiss()
-            logout() // Reutilizamos el método logout existente que pide confirmación
+            logout()
         }
-        
+
         dialog.show()
-        // Fondo transparente necesario para el CardView
-        dialog.window?.setBackgroundDrawable(android.graphics.drawable.ColorDrawable(android.graphics.Color.TRANSPARENT))
+        dialog.window?.setBackgroundDrawable(
+            android.graphics.drawable.ColorDrawable(android.graphics.Color.TRANSPARENT)
+        )
     }
+
 
     private fun logout() {
         // Mostrar confirmación antes de cerrar sesión
@@ -469,5 +506,12 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    override fun onDestroy() {
+        super.onDestroy()
+        // Limpiar el receiver del AppUpdater para evitar memory leaks
+        if (::appUpdater.isInitialized) {
+            appUpdater.cleanup()
+        }
+    }
 
 }
