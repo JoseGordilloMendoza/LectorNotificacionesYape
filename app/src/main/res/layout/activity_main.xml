@@ -9,9 +9,10 @@
         android:id="@+id/toolbar"
         android:layout_width="match_parent"
         android:layout_height="?attr/actionBarSize"
-        android:background="?attr/colorPrimary"
-        android:theme="@style/ThemeOverlay.MaterialComponents.Dark.ActionBar"
+        android:background="#5C35A0"
+        android:theme="@style/ToolbarTheme"
         app:titleTextColor="@android:color/white"
+        app:subtitleTextColor="#CCBBFF"
         app:title="Lector Yapeos" />
 
     <ScrollView
@@ -205,6 +206,112 @@
             android:layout_marginTop="16dp"
             android:layout_marginBottom="8dp"/>
 
-</LinearLayout>
+        <!-- TARJETA DE ACTUALIZACIÓN -->
+        <androidx.cardview.widget.CardView
+            android:id="@+id/cardUpdateBanner"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="24dp"
+            android:layout_marginBottom="8dp"
+            android:elevation="6dp"
+            android:visibility="gone"
+            app:cardCornerRadius="16dp"
+            app:cardBackgroundColor="#1A1A2E">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="20dp">
+
+                <!-- Fila superior: ícono + título + badge versión -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:layout_marginBottom="8dp">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="🚀"
+                        android:textSize="22sp"
+                        android:layout_marginEnd="10dp"/>
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:orientation="vertical">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Actualización disponible"
+                            android:textSize="14sp"
+                            android:textStyle="bold"
+                            android:textColor="#FFFFFF"/>
+
+                        <TextView
+                            android:id="@+id/tvUpdateVersion"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="v1.7.0"
+                            android:textSize="12sp"
+                            android:textColor="#A0A8CC"
+                            android:layout_marginTop="2dp"/>
+                    </LinearLayout>
+
+                    <!-- Badge "NUEVO" -->
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text=" NUEVO "
+                        android:textSize="10sp"
+                        android:textStyle="bold"
+                        android:textColor="#FFFFFF"
+                        android:background="#7C4DFF"
+                        android:paddingTop="3dp"
+                        android:paddingBottom="3dp"
+                        android:paddingStart="8dp"
+                        android:paddingEnd="8dp"/>
+
+                </LinearLayout>
+
+                <!-- Separador sutil -->
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="1dp"
+                    android:background="#2A2A4A"
+                    android:layout_marginBottom="10dp"/>
+
+                <!-- Notas de la versión -->
+                <TextView
+                    android:id="@+id/tvUpdateReleaseNotes"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Mejoras de estabilidad y rendimiento"
+                    android:textSize="12sp"
+                    android:textColor="#8A8FAA"
+                    android:layout_marginBottom="16dp"
+                    android:lineSpacingExtra="2dp"/>
+
+                <!-- Botón de instalar -->
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnInstallUpdate"
+                    android:layout_width="match_parent"
+                    android:layout_height="44dp"
+                    android:text="⬇  Descargar e Instalar"
+                    android:textSize="13sp"
+                    android:textStyle="bold"
+                    android:textColor="#FFFFFF"
+                    app:backgroundTint="#7C4DFF"
+                    app:cornerRadius="8dp"/>
+
+            </LinearLayout>
+        </androidx.cardview.widget.CardView>
+
+    </LinearLayout>
     </ScrollView>
 </LinearLayout>
