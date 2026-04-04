@@ -211,7 +211,6 @@ class MainActivity : AppCompatActivity() {
             else -> super.onOptionsItemSelected(item)
         }
     }
-
     private fun showProfileDialog() {
         val dialogView = layoutInflater.inflate(R.layout.dialog_profile, null)
         val dialog = AlertDialog.Builder(this)
@@ -369,13 +368,30 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun setupUI() {
-        // Botón para abrir configuración de notificaciones
+        // Botón para abrir configuración de notificaciones genérica
         binding.btnEnableNotifications.setOnClickListener { openNotificationSettings() }
+
+        // Botón específico para la pantalla de Información de la App (Ajustes Restringidos)
+        binding.btnOpenAppInfo.setOnClickListener { openAppInfoSettings() }
 
         // Botón para abrir el portal web
         binding.btnOpenWeb.setOnClickListener { openWebPortal() }
     }
     
+    /**
+     * Abre la pantalla de "Información de la Aplicación" específica de Lector Yape.
+     * Aquí el usuario puede acceder a los 3 puntitos para "Permitir ajustes restringidos".
+     */
+    private fun openAppInfoSettings() {
+        try {
+            val intent = Intent(android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS)
+            intent.data = android.net.Uri.parse("package:$packageName")
+            startActivity(intent)
+        } catch (e: Exception) {
+            android.util.Log.e("MainActivity", "Error abriendo App Info: ${e.message}")
+            android.widget.Toast.makeText(this, "No se pudo abrir la configuración", android.widget.Toast.LENGTH_SHORT).show()
+        }
+    }
     /**
      * Configura el switch de notificación persistente / servicio activo
      */
@@ -453,7 +469,7 @@ class MainActivity : AppCompatActivity() {
             binding.btnEnableNotifications.isEnabled = false
             binding.btnEnableNotifications.text = "Acceso Habilitado"
             binding.btnEnableNotifications.alpha = 0.6f
-            binding.instrucciones.isVisible = false
+            binding.cardRestrictedSettings.isVisible = false
         } else {
             binding.tvPermissionStatus.text = "Servicio sin permiso "
             binding.statusIndicator.backgroundTintList =
@@ -461,6 +477,7 @@ class MainActivity : AppCompatActivity() {
             binding.btnEnableNotifications.isEnabled = true
             binding.btnEnableNotifications.text = "⚙Habilitar Acceso a Notificaciones"
             binding.btnEnableNotifications.alpha = 1.0f
+            binding.cardRestrictedSettings.isVisible = true
         }
     }
 
