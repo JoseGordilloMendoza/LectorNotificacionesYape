@@ -8,10 +8,10 @@
         android:icon="@drawable/ic_person"
         app:showAsAction="always"/>
 
-    <!-- Botón de actualizaciones en el menú overflow (3 puntos) -->
     <item
         android:id="@+id/action_updates"
-        android:title="📦 Actualizaciones"
+        android:title="Actualizaciones"
+        android:icon="@drawable/ic_update"
         app:showAsAction="never"/>
         
 </menu>

@@ -9,7 +9,7 @@
         android:id="@+id/toolbar"
         android:layout_width="match_parent"
         android:layout_height="?attr/actionBarSize"
-        android:background="#5C35A0"
+        android:background="#4A2885"
         android:theme="@style/ToolbarTheme"
         app:titleTextColor="@android:color/white"
         app:subtitleTextColor="#CCBBFF"
@@ -18,7 +18,8 @@
     <ScrollView
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:fillViewport="true">
+        android:fillViewport="true"
+        android:background="#EBE8F2">
 
         <LinearLayout
             android:id="@+id/main"
@@ -142,22 +143,69 @@
         android:text="⚙ Habilitar Acceso a Notificaciones"
         android:textSize="16sp"
         android:textStyle="bold"
-        android:backgroundTint="@color/purple_500"
+        app:backgroundTint="#4A2885"
         android:textColor="@color/white"
         android:layout_marginBottom="16dp"/>
 
-    <!-- Información -->
-    <TextView
-        android:id="@+id/instrucciones"
+    <!-- TARJETA: Solución Bloqueo de Android 13 / Xiaomi -->
+    <androidx.cardview.widget.CardView
+        android:id="@+id/cardRestrictedSettings"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="INSTRUCCIONES:\n\n1. Presiona el botón de arriba\n2. Busca 'Lector Yape' en la lista\n3. Activa el switch manualmente\n4. Regresa a esta app"
-        android:textSize="13sp"
-        android:textColor="#666666"
-        android:padding="16dp"
-        android:background="#F5F5F5"
-        android:lineSpacingExtra="4dp"
-        android:layout_marginBottom="24dp"/>
+        android:layout_marginBottom="24dp"
+        app:cardCornerRadius="12dp"
+        app:cardElevation="2dp"
+        app:cardBackgroundColor="#FFF8E1"> <!-- Tono ámbar/advertencia suave -->
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="16dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:layout_marginBottom="8dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="🛡️"
+                    android:textSize="20sp"
+                    android:layout_marginEnd="8dp"/>
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="¿Android te denegó el acceso (Xiaomi)?"
+                    android:textSize="14sp"
+                    android:textStyle="bold"
+                    android:textColor="#F57C00"/>
+            </LinearLayout>
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="El sistema bloquea este permiso por seguridad. Para solucionarlo:\n\n1. Entra a 'Info. de la App' (botón abajo).\n2. Toca los 3 puntitos arriba a la derecha.\n3. Selecciona 'Permitir ajustes restringidos'.\n4. Vuelve aquí e intenta de nuevo."
+                android:textSize="13sp"
+                android:textColor="#555555"
+                android:lineSpacingExtra="2dp"
+                android:layout_marginBottom="12dp"/>
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnOpenAppInfo"
+                style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Ir a Info. de la App"
+                android:textColor="#F57C00"
+                app:strokeColor="#FFB74D"/>
+                
+        </LinearLayout>
+    </androidx.cardview.widget.CardView>
 
     <!-- Contador de transacciones -->
     <androidx.cardview.widget.CardView
