@@ -1,17 +1,18 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
     android:gravity="center"
     android:padding="32dp"
-    android:background="#FFFFFF">
+    android:background="#151120">
 
     <!-- Logo/Icono -->
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="📱"
+        android:text="✨"
         android:textSize="80sp"
         android:layout_marginBottom="24dp"/>
 
@@ -20,18 +21,18 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="Lector YAPE"
-        android:textSize="32sp"
+        android:textSize="36sp"
         android:textStyle="bold"
-        android:textColor="@color/purple_700"
+        android:textColor="#FFFFFF"
         android:layout_marginBottom="8dp"/>
 
     <!-- Subtítulo -->
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Sincroniza tus yapeos"
+        android:text="Sincroniza tus registros"
         android:textSize="16sp"
-        android:textColor="#666666"
+        android:textColor="#bdf4ff"
         android:gravity="center"
         android:layout_marginBottom="48dp"/>
 
@@ -39,15 +40,15 @@
     <TextView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Necesitamos que inicies sesión con tu cuenta de Google."
-        android:textSize="14sp"
-        android:textColor="#666666"
+        android:text="Inicia sesión con tu cuenta de Google para comenzar."
+        android:textSize="15sp"
+        android:textColor="#e8dff5"
         android:gravity="center"
         android:layout_marginBottom="32dp"
         android:lineSpacingExtra="4dp"/>
 
     <!-- Botón de Google Sign-In -->
-    <com.google.android.material.button.MaterialButton
+    <androidx.appcompat.widget.AppCompatButton
         android:id="@+id/btnGoogleSignIn"
         android:layout_width="match_parent"
         android:layout_height="56dp"
@@ -55,20 +56,19 @@
         android:textSize="16sp"
         android:textStyle="bold"
         android:textColor="@color/white"
-        app:icon="@android:drawable/ic_menu_info_details"
-        app:iconGravity="textStart"
-        app:iconPadding="12dp"
-        android:backgroundTint="@color/purple_500"
-        app:cornerRadius="8dp"
-        xmlns:app="http://schemas.android.com/apk/res-auto"/>
+        android:background="@drawable/bg_pill_button"
+        android:translationZ="4dp"
+        android:drawableStart="@android:drawable/ic_menu_info_details"
+        android:paddingStart="24dp"
+        android:paddingEnd="24dp" />
 
     <!-- Nota de privacidad -->
     <TextView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Solo usaremos tu cuenta para acceder a Google Sheets. No compartimos tu información."
+        android:text="Al continuar, aceptas la sincronización segura de las alertas bancarias entrantes."
         android:textSize="12sp"
-        android:textColor="#999999"
+        android:textColor="#948da2"
         android:gravity="center"
         android:layout_marginTop="24dp"
         android:lineSpacingExtra="2dp"/>
@@ -79,6 +79,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginTop="24dp"
+        android:indeterminateTint="#00e3fd"
         android:visibility="gone"/>
 
     <TextView
@@ -87,8 +88,8 @@
         android:layout_height="wrap_content"
         android:text="Iniciando sesión..."
         android:textSize="14sp"
-        android:textColor="#666666"
-        android:layout_marginTop="8dp"
+        android:textColor="#cbc3d9"
+        android:layout_marginTop="16dp"
         android:visibility="gone"/>
 
 </LinearLayout>
