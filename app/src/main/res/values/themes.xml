@@ -4,6 +4,8 @@
         <item name="colorPrimary">#5C35A0</item>
         <item name="colorOnPrimary">#FFFFFF</item>
         <item name="colorPrimaryVariant">#3700B3</item>
+        <!-- Tipografía global amigable -->
+        <item name="android:fontFamily">sans-serif-medium</item>
     </style>
 
     <style name="Theme.LectorYape" parent="Base.Theme.LectorYape" />
@@ -12,7 +14,7 @@
     <style name="ToolbarTheme" parent="ThemeOverlay.MaterialComponents.Dark.ActionBar">
         <item name="android:textColorPrimary">#FFFFFF</item>
         <item name="android:textColorSecondary">#FFFFFF</item>
-        <!-- hace que el ícono de los 3 puntos (overflow) sea blanco -->
+        <item name="android:fontFamily">sans-serif-medium</item>
         <item name="colorControlNormal">#FFFFFF</item>
     </style>
 

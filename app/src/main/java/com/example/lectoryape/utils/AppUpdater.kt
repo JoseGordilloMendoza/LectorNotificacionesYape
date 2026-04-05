@@ -178,37 +178,22 @@ class AppUpdater(private val activity: AppCompatActivity) {
     }
 
     /**
-     * Diálogo personalizado abierto manualmente desde el menú "Actualizaciones".
-     * Siempre muestra la info de la versión más reciente en Firestore.
-     * Si ya está actualizado, el botón de descarga está deshabilitado.
+     * Referencia las vistas integradas en activity_main.xml para la pestaña "Actualizaciones"
      */
-    fun showVersionInfoDialog() {
+    fun setupUpdatesScreen() {
         CoroutineScope(Dispatchers.IO).launch {
             val versionInfo = fetchVersionInfo()
 
             withContext(Dispatchers.Main) {
-                // Layout personalizado
-                val dialogView = android.view.LayoutInflater.from(activity)
-                    .inflate(R.layout.dialog_updates, null)
-
-                val dialog = AlertDialog.Builder(activity)
-                    .setView(dialogView)
-                    .create()
-
-                // Fondo transparente para mostrar las esquinas redondeadas del CardView
-                dialog.window?.setBackgroundDrawable(
-                    android.graphics.drawable.ColorDrawable(android.graphics.Color.TRANSPARENT)
-                )
-
-                // Referencias a las vistas del layout
-                val tvStatus       = dialogView.findViewById<android.widget.TextView>(R.id.tvDialogStatus)
-                val tvCurrentVer   = dialogView.findViewById<android.widget.TextView>(R.id.tvDialogCurrentVersion)
-                val tvCurrentBuild = dialogView.findViewById<android.widget.TextView>(R.id.tvDialogCurrentBuild)
-                val tvLatestVer    = dialogView.findViewById<android.widget.TextView>(R.id.tvDialogLatestVersion)
-                val tvLatestBuild  = dialogView.findViewById<android.widget.TextView>(R.id.tvDialogLatestBuild)
-                val tvNotes        = dialogView.findViewById<android.widget.TextView>(R.id.tvDialogReleaseNotes)
-                val btnAction      = dialogView.findViewById<com.google.android.material.button.MaterialButton>(R.id.btnDialogAction)
-                val btnDismiss     = dialogView.findViewById<com.google.android.material.button.MaterialButton>(R.id.btnDialogDismiss)
+                // Referencias a las vistas del layout ya presentes en activity
+                val tvStatus       = activity.findViewById<android.widget.TextView>(R.id.tvDialogStatus)
+                val tvCurrentVer   = activity.findViewById<android.widget.TextView>(R.id.tvDialogCurrentVersion)
+                val tvCurrentBuild = activity.findViewById<android.widget.TextView>(R.id.tvDialogCurrentBuild)
+                val tvLatestVer    = activity.findViewById<android.widget.TextView>(R.id.tvDialogLatestVersion)
+                val tvLatestBuild  = activity.findViewById<android.widget.TextView>(R.id.tvDialogLatestBuild)
+                val tvNotes        = activity.findViewById<android.widget.TextView>(R.id.tvDialogReleaseNotes)
+                val btnAction      = activity.findViewById<com.google.android.material.button.MaterialButton>(R.id.btnDialogAction)
+                val btnDismiss     = activity.findViewById<com.google.android.material.button.MaterialButton>(R.id.btnDialogDismiss)
 
                 val currentCode = getCurrentVersionCode()
                 val currentName = getCurrentVersionName()
@@ -223,9 +208,7 @@ class AppUpdater(private val activity: AppCompatActivity) {
                     tvLatestVer.text    = "—"
                     tvLatestBuild.text  = "—"
                     tvNotes.text        = "No se pudo obtener información de actualizaciones."
-                    btnAction.text      = "Cerrar"
-                    btnAction.setOnClickListener { dialog.dismiss() }
-                    dialog.show()
+                    btnAction.visibility = android.view.View.GONE
                     return@withContext
                 }
 
@@ -242,28 +225,21 @@ class AppUpdater(private val activity: AppCompatActivity) {
 
                 if (isUpToDate) {
                     tvStatus.text  = "✅ Tienes la versión más reciente"
-                    btnAction.text = "Cerrar"
-                    btnAction.setBackgroundTintList(
-                        android.content.res.ColorStateList.valueOf(
-                            android.graphics.Color.parseColor("#00897B")
-                        )
-                    )
-                    btnAction.setOnClickListener { dialog.dismiss() }
+                    btnAction.visibility = android.view.View.GONE
                     // btnDismiss permanece GONE
                 } else {
                     tvStatus.text  = "🔴 Hay una nueva versión disponible"
                     btnAction.text = "⬇  Instalar v$latestName"
                     btnDismiss.visibility = android.view.View.VISIBLE
 
+                    btnAction.visibility = android.view.View.VISIBLE
                     btnAction.setOnClickListener {
-                        dialog.dismiss()
                         startDownload(downloadUrl)
                     }
-                    btnDismiss.setOnClickListener { dialog.dismiss() }
+                    // btnDismiss is unused in screen mode actually
                 }
 
-                dialog.show()
-                Log.d(TAG, "ℹ️ Diálogo personalizado de versión mostrado (upToDate=$isUpToDate)")
+                Log.d(TAG, "ℹ️ Pantalla de actualizaciones refrescada (upToDate=$isUpToDate)")
             }
         }
     }

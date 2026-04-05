@@ -136,10 +136,14 @@ class MainActivity : AppCompatActivity() {
     private fun initializeApp() {
         setupUI()
 
-        // displayUserInfo() call removed as it's now handled by Profile Dialog
         checkNotificationPermission()
         updateNotificationCount()
         setupNotificationSwitch()
+        
+        // Configurar Barra Inferior
+        setupBottomNavigation()
+        // Inicializar datos del perfil
+        setupProfileScreen()
         
         // Verificar y solicitar exención de optimización de batería
         checkBatteryOptimization()
@@ -193,39 +197,67 @@ class MainActivity : AppCompatActivity() {
         com.example.lectoryape.utils.BatteryOptimizationHelper.checkAndRequest(this)
     }
 
-    override fun onCreateOptionsMenu(menu: Menu?): Boolean {
-        menuInflater.inflate(R.menu.main_menu, menu)
-        return true
-    }
+    private fun setupBottomNavigation() {
+        val bottomNav = findViewById<com.google.android.material.bottomnavigation.BottomNavigationView>(R.id.bottomNavigation)
+        val containerHome = findViewById<android.widget.ScrollView>(R.id.containerHome)
+        val containerUpdates = findViewById<android.widget.ScrollView>(R.id.containerUpdates)
+        val containerProfile = findViewById<android.widget.ScrollView>(R.id.containerProfile)
 
-    override fun onOptionsItemSelected(item: MenuItem): Boolean {
-        return when (item.itemId) {
-            R.id.action_profile -> {
-                showProfileDialog()
-                true
+        bottomNav.setOnItemSelectedListener { item ->
+            // Ocultar todos
+            containerHome.visibility = android.view.View.GONE
+            containerUpdates.visibility = android.view.View.GONE
+            containerProfile.visibility = android.view.View.GONE
+
+            when (item.itemId) {
+                R.id.nav_home -> {
+                    containerHome.visibility = android.view.View.VISIBLE
+                    updateToolbarTitle(R.id.nav_home)
+                    true
+                }
+                R.id.nav_updates -> {
+                    containerUpdates.visibility = android.view.View.VISIBLE
+                    updateToolbarTitle(R.id.nav_updates)
+                    appUpdater.setupUpdatesScreen() // Actualizar info
+                    true
+                }
+                R.id.nav_profile -> {
+                    containerProfile.visibility = android.view.View.VISIBLE
+                    updateToolbarTitle(R.id.nav_profile)
+                    true
+                }
+                else -> false
             }
-            R.id.action_updates -> {
-                appUpdater.showVersionInfoDialog()
-                true
-            }
-            else -> super.onOptionsItemSelected(item)
         }
+        
+        // Establecer título inicial
+        updateToolbarTitle(R.id.nav_home)
     }
-    private fun showProfileDialog() {
-        val dialogView = layoutInflater.inflate(R.layout.dialog_profile, null)
-        val dialog = AlertDialog.Builder(this)
-            .setView(dialogView)
-            .create()
 
-        // Referencias a vistas
-        val ivPhoto        = dialogView.findViewById<android.widget.ImageView>(R.id.ivProfilePhoto)
-        val tvName         = dialogView.findViewById<android.widget.TextView>(R.id.tvProfileName)
-        val tvEmail        = dialogView.findViewById<android.widget.TextView>(R.id.tvProfileEmail)
-        val tvStatus       = dialogView.findViewById<android.widget.TextView>(R.id.tvProfileStatus)
-        val tvRole         = dialogView.findViewById<android.widget.TextView>(R.id.tvProfileRole)
-        val tvCreatedAt    = dialogView.findViewById<android.widget.TextView>(R.id.tvProfileCreatedAt)
-        val tvTrialEnd     = dialogView.findViewById<android.widget.TextView>(R.id.tvProfileTrialEnd)
-        val btnLogout      = dialogView.findViewById<com.google.android.material.button.MaterialButton>(R.id.btnProfileLogout)
+    private fun updateToolbarTitle(navId: Int) {
+        val user = authManager.getCurrentUser()
+        val firstName = user?.displayName?.split(" ")?.firstOrNull() ?: "Usuario"
+        
+        val title = when (navId) {
+            R.id.nav_home -> "Hola, $firstName"
+            R.id.nav_updates -> "Novedades"
+            R.id.nav_profile -> "Mi Cuenta"
+            else -> "Lector Yape"
+        }
+        supportActionBar?.title = title
+    }
+
+    private fun setupProfileScreen() {
+        // Referencias a vistas ya integradas en activity_main.xml (a través de <include>)
+
+        val ivPhoto        = findViewById<android.widget.ImageView>(R.id.ivProfilePhoto)
+        val tvName         = findViewById<android.widget.TextView>(R.id.tvProfileName)
+        val tvEmail        = findViewById<android.widget.TextView>(R.id.tvProfileEmail)
+        val tvStatus       = findViewById<android.widget.TextView>(R.id.tvProfileStatus)
+        val tvRole         = findViewById<android.widget.TextView>(R.id.tvProfileRole)
+        val tvCreatedAt    = findViewById<android.widget.TextView>(R.id.tvProfileCreatedAt)
+        val tvTrialEnd     = findViewById<android.widget.TextView>(R.id.tvProfileTrialEnd)
+        val btnLogout      = findViewById<com.google.android.material.button.MaterialButton>(R.id.btnProfileLogout)
 
         val user = authManager.getCurrentUser()
 
@@ -290,14 +322,9 @@ class MainActivity : AppCompatActivity() {
 
         // Botón Cerrar Sesión
         btnLogout.setOnClickListener {
-            dialog.dismiss()
+            // dialog.dismiss() -- Ya no es diálogo
             logout()
         }
-
-        dialog.show()
-        dialog.window?.setBackgroundDrawable(
-            android.graphics.drawable.ColorDrawable(android.graphics.Color.TRANSPARENT)
-        )
     }
 
 

@@ -1,311 +1,355 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#151120"
-    android:orientation="vertical">
+    android:background="#151120">
 
     <com.google.android.material.appbar.MaterialToolbar
         android:id="@+id/toolbar"
         android:layout_width="match_parent"
         android:layout_height="?attr/actionBarSize"
+        android:layout_alignParentTop="true"
         android:background="#151120"
         android:theme="@style/ThemeOverlay.AppCompat.Dark.ActionBar"
         app:titleTextColor="@android:color/white"
         app:subtitleTextColor="#cbc3d9"
-        app:title="Lector Yapeos" />
+        app:title="Home" />
 
-    <ScrollView
+    <FrameLayout
+        android:id="@+id/screensContainer"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:fillViewport="true">
+        android:layout_below="@id/toolbar"
+        android:layout_above="@+id/bottomNavigation">
 
-        <LinearLayout
-            android:id="@+id/main"
+        <!-- CONTENEDOR 1: HOME -->
+        <ScrollView
+            android:id="@+id/containerHome"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:padding="24dp"
-            android:clipToPadding="false"
-            android:gravity="center_horizontal">
+            android:layout_height="match_parent"
+            android:fillViewport="true"
+            android:visibility="visible">
 
-            <!-- HERO TEXT & COUNTER -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:background="@drawable/bg_hero_gradient"
                 android:orientation="vertical"
-                android:padding="32dp"
-                android:gravity="center"
-                android:elevation="8dp"
-                android:layout_marginBottom="24dp">
+                android:padding="24dp"
+                android:clipToPadding="false"
+                android:gravity="center_horizontal">
 
-                <TextView
-                    android:id="@+id/tvTransactionCount"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="0"
-                    android:textSize="56sp"
-                    android:textStyle="bold"
-                    android:textColor="#FFFFFF" />
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Yapeos Registrados"
-                    android:textSize="16sp"
-                    android:textStyle="bold"
-                    android:textColor="#e8deff"
-                    android:layout_marginTop="4dp" />
-                    
-            </LinearLayout>
-
-            <TextView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="El servicio de lectura escuchará automáticamente."
-                android:textSize="14sp"
-                android:textColor="#cbc3d9"
-                android:layout_marginBottom="24dp"
-                android:gravity="center"/>
-
-            <!-- SERVICE STATUS -->
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:background="@drawable/bg_dark_card"
-                android:orientation="vertical"
-                android:padding="20dp"
-                android:layout_marginBottom="24dp"
-                android:elevation="0dp">
-
+                <!-- HERO TEXT & COUNTER -->
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:gravity="center_vertical">
-
-                    <View
-                        android:id="@+id/statusIndicator"
-                        android:layout_width="12dp"
-                        android:layout_height="12dp"
-                        android:background="@drawable/circle_indicator"
-                        android:backgroundTint="#ffb4ab"
-                        android:layout_marginEnd="12dp"/>
+                    android:background="@drawable/bg_hero_gradient"
+                    android:orientation="vertical"
+                    android:padding="32dp"
+                    android:gravity="center"
+                    android:elevation="8dp"
+                    android:layout_marginBottom="24dp">
 
                     <TextView
-                        android:id="@+id/tvPermissionStatus"
-                        android:layout_width="0dp"
+                        android:id="@+id/tvTransactionCount"
+                        android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:text="Servicio Inactivo"
-                        android:textSize="15sp"
+                        android:text="0"
+                        android:textSize="56sp"
                         android:textStyle="bold"
-                        android:textColor="#e8dff5"/>
+                        android:textColor="#FFFFFF" />
 
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Yapeos Registrados"
+                        android:textSize="16sp"
+                        android:textStyle="bold"
+                        android:textColor="#e8deff"
+                        android:layout_marginTop="4dp" />
                 </LinearLayout>
 
-                <View
+                <TextView
                     android:layout_width="match_parent"
-                    android:layout_height="1dp"
-                    android:background="#2c2738"
-                    android:layout_marginTop="16dp"
-                    android:layout_marginBottom="16dp"/>
+                    android:layout_height="wrap_content"
+                    android:text="El servicio de lectura escuchará automáticamente."
+                    android:textSize="14sp"
+                    android:textColor="#cbc3d9"
+                    android:layout_marginBottom="24dp"
+                    android:gravity="center"/>
 
+                <!-- SERVICE STATUS -->
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:gravity="center_vertical">
+                    android:background="@drawable/bg_dark_card"
+                    android:orientation="vertical"
+                    android:padding="20dp"
+                    android:layout_marginBottom="24dp">
 
                     <LinearLayout
-                        android:layout_width="0dp"
+                        android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:orientation="vertical">
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical">
+
+                        <View
+                            android:id="@+id/statusIndicator"
+                            android:layout_width="12dp"
+                            android:layout_height="12dp"
+                            android:background="@drawable/circle_indicator"
+                            android:backgroundTint="#ffb4ab"
+                            android:layout_marginEnd="12dp"/>
 
                         <TextView
-                            android:layout_width="wrap_content"
+                            android:id="@+id/tvPermissionStatus"
+                            android:layout_width="0dp"
                             android:layout_height="wrap_content"
-                            android:text="Escucha Background"
-                            android:textSize="14sp"
-                            android:textStyle="bold"
-                            android:textColor="#FFFFFF"/>
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="Mantener activo el hilo principal"
-                            android:textSize="12sp"
-                            android:textColor="#948da2"
-                            android:layout_marginTop="2dp"/>
-                    </LinearLayout>
-
-                    <com.google.android.material.switchmaterial.SwitchMaterial
-                        android:id="@+id/switchPersistentNotification"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:checked="false"
-                        app:useMaterialThemeColors="false"
-                        app:thumbTint="#cdbdff"
-                        app:trackTint="#494456"/>
-                </LinearLayout>
-
-            </LinearLayout>
-
-            <!-- ENABLE PERMISSION BUTTON -->
-            <androidx.appcompat.widget.AppCompatButton
-                android:id="@+id/btnEnableNotifications"
-                android:layout_width="match_parent"
-                android:layout_height="56dp"
-                android:text="⚙ Habilitar Acceso"
-                android:textSize="16sp"
-                android:textStyle="bold"
-                android:background="@drawable/bg_pill_button"
-                android:textColor="@color/white"
-                android:translationZ="4dp"
-                android:layout_marginBottom="24dp"/>
-
-            <!-- XIAOMI RESTRICTED WARNING -->
-            <LinearLayout
-                android:id="@+id/cardRestrictedSettings"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:background="@drawable/bg_dark_card"
-                android:backgroundTint="#2c1a1a"
-                android:orientation="vertical"
-                android:padding="20dp"
-                android:layout_marginBottom="24dp">
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:gravity="center_vertical"
-                    android:layout_marginBottom="12dp">
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="🛡️"
-                        android:textSize="20sp"
-                        android:layout_marginEnd="12dp"/>
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="¿Acceso denegado?"
-                        android:textSize="15sp"
-                        android:textStyle="bold"
-                        android:textColor="#ffb4a0"/>
-                </LinearLayout>
-
-                <TextView
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="1. Ve a Info. de la App\n2. Toca los 3 puntos arriba a la derecha\n3. Permitir ajustes restringidos\n4. Vuelve e intenta de nuevo"
-                    android:textSize="13sp"
-                    android:textColor="#dfc3c3"
-                    android:lineSpacingExtra="4dp"
-                    android:layout_marginBottom="16dp"/>
-
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/btnOpenAppInfo"
-                    style="@style/Widget.MaterialComponents.Button.OutlinedButton"
-                    android:layout_width="match_parent"
-                    android:layout_height="48dp"
-                    android:text="Ir a Info. de la App"
-                    android:textColor="#ffb4a0"
-                    app:strokeColor="#ffb4a0"
-                    app:cornerRadius="100dp"/>
-
-            </LinearLayout>
-
-            <androidx.appcompat.widget.AppCompatButton
-                android:id="@+id/btnOpenWeb"
-                android:layout_width="match_parent"
-                android:layout_height="56dp"
-                android:text="🌐 Ver en el Portal Web"
-                android:textSize="15sp"
-                android:textStyle="bold"
-                android:background="@drawable/bg_pill_teal"
-                android:textColor="#001f24"
-                android:translationZ="4dp"
-                android:layout_marginBottom="16dp"/>
-
-            <!-- UPDATE BANNER -->
-            <LinearLayout
-                android:id="@+id/cardUpdateBanner"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:background="@drawable/bg_dark_card"
-                android:backgroundTint="#2c2738"
-                android:orientation="vertical"
-                android:padding="20dp"
-                android:visibility="gone"
-                android:layout_marginBottom="16dp">
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:gravity="center_vertical"
-                    android:layout_marginBottom="12dp">
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="🚀"
-                        android:textSize="22sp"
-                        android:layout_marginEnd="12dp"/>
-
-                    <LinearLayout
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:orientation="vertical">
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="Nueva versión"
+                            android:layout_weight="1"
+                            android:text="Servicio Inactivo"
                             android:textSize="15sp"
                             android:textStyle="bold"
-                            android:textColor="#FFFFFF"/>
+                            android:textColor="#e8dff5"/>
 
-                        <TextView
-                            android:id="@+id/tvUpdateVersion"
+                    </LinearLayout>
+
+                    <View
+                        android:layout_width="match_parent"
+                        android:layout_height="1dp"
+                        android:background="#2c2738"
+                        android:layout_marginTop="16dp"
+                        android:layout_marginBottom="16dp"/>
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical">
+
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:orientation="vertical">
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Escucha Background"
+                                android:textSize="14sp"
+                                android:textStyle="bold"
+                                android:textColor="#FFFFFF"/>
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Mantener activo el hilo principal"
+                                android:textSize="12sp"
+                                android:textColor="#948da2"
+                                android:layout_marginTop="2dp"/>
+                        </LinearLayout>
+
+                        <com.google.android.material.switchmaterial.SwitchMaterial
+                            android:id="@+id/switchPersistentNotification"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="v?.?.?"
-                            android:textSize="12sp"
-                            android:textColor="#bdf4ff" />
+                            android:checked="false"
+                            app:useMaterialThemeColors="false"
+                            app:thumbTint="#cdbdff"
+                            app:trackTint="#494456"/>
                     </LinearLayout>
 
                 </LinearLayout>
 
-                <TextView
-                    android:id="@+id/tvUpdateReleaseNotes"
+                <!-- ENABLE PERMISSION BUTTON -->
+                <androidx.appcompat.widget.AppCompatButton
+                    android:id="@+id/btnEnableNotifications"
+                    android:layout_width="match_parent"
+                    android:layout_height="56dp"
+                    android:text="Habilitar Acceso"
+                    android:textSize="16sp"
+                    android:textStyle="bold"
+                    android:background="@drawable/bg_pill_button"
+                    android:textColor="@color/white"
+                    android:translationZ="4dp"
+                    android:layout_marginBottom="24dp"/>
+
+                <!-- XIAOMI RESTRICTED WARNING -->
+                <LinearLayout
+                    android:id="@+id/cardRestrictedSettings"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="Mejoras introducidas"
-                    android:textSize="13sp"
-                    android:textColor="#cbc3d9"
-                    android:layout_marginBottom="16dp"/>
+                    android:background="@drawable/bg_dark_card"
+                    android:backgroundTint="#2c1a1a"
+                    android:orientation="vertical"
+                    android:padding="20dp"
+                    android:layout_marginBottom="24dp">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical"
+                        android:layout_marginBottom="12dp">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="D"
+                            android:textSize="20sp"
+                            android:textColor="#ffb4a0"
+                            android:textStyle="bold"
+                            android:layout_marginEnd="12dp"/>
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Acceso denegado"
+                            android:textSize="15sp"
+                            android:textStyle="bold"
+                            android:textColor="#ffb4a0"/>
+                    </LinearLayout>
+
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="1. Ve a Info. de la App\n2. Toca los 3 puntos arriba a la derecha\n3. Permitir ajustes restringidos\n4. Vuelve e intenta de nuevo"
+                        android:textSize="13sp"
+                        android:textColor="#dfc3c3"
+                        android:lineSpacingExtra="4dp"
+                        android:layout_marginBottom="16dp"/>
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnOpenAppInfo"
+                        style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                        android:layout_width="match_parent"
+                        android:layout_height="48dp"
+                        android:text="Ir a Info. de la App"
+                        android:textColor="#ffb4a0"
+                        app:strokeColor="#ffb4a0"
+                        app:cornerRadius="100dp"/>
+
+                </LinearLayout>
 
                 <androidx.appcompat.widget.AppCompatButton
-                    android:id="@+id/btnInstallUpdate"
+                    android:id="@+id/btnOpenWeb"
                     android:layout_width="match_parent"
-                    android:layout_height="48dp"
-                    android:text="⬇ Instalar ahora"
-                    android:textSize="14sp"
+                    android:layout_height="56dp"
+                    android:text="Ver en el Portal Web"
+                    android:textSize="15sp"
                     android:textStyle="bold"
-                    android:textColor="#FFFFFF"
-                    android:background="@drawable/bg_pill_button" />
+                    android:background="@drawable/bg_pill_teal"
+                    android:textColor="#001f24"
+                    android:translationZ="4dp"
+                    android:layout_marginBottom="16dp"/>
+
+                <!-- UPDATE BANNER -->
+                <LinearLayout
+                    android:id="@+id/cardUpdateBanner"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:background="@drawable/bg_dark_card"
+                    android:backgroundTint="#2c2738"
+                    android:orientation="vertical"
+                    android:padding="20dp"
+                    android:visibility="gone"
+                    android:layout_marginBottom="16dp">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical"
+                        android:layout_marginBottom="12dp">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Aviso"
+                            android:textSize="22sp"
+                            android:textColor="#bdf4ff"
+                            android:textStyle="bold"
+                            android:layout_marginEnd="12dp"/>
+
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:orientation="vertical">
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Nueva versión"
+                                android:textSize="15sp"
+                                android:textStyle="bold"
+                                android:textColor="#FFFFFF"/>
+
+                            <TextView
+                                android:id="@+id/tvUpdateVersion"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="v?.?.?"
+                                android:textSize="12sp"
+                                android:textColor="#bdf4ff" />
+                        </LinearLayout>
+
+                    </LinearLayout>
+
+                    <TextView
+                        android:id="@+id/tvUpdateReleaseNotes"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="Mejoras introducidas"
+                        android:textSize="13sp"
+                        android:textColor="#cbc3d9"
+                        android:layout_marginBottom="16dp"/>
+
+                    <androidx.appcompat.widget.AppCompatButton
+                        android:id="@+id/btnInstallUpdate"
+                        android:layout_width="match_parent"
+                        android:layout_height="48dp"
+                        android:text="Instalar ahora"
+                        android:textSize="14sp"
+                        android:textStyle="bold"
+                        android:textColor="#FFFFFF"
+                        android:background="@drawable/bg_pill_button" />
+                </LinearLayout>
 
             </LinearLayout>
+        </ScrollView>
 
-        </LinearLayout>
-    </ScrollView>
-</LinearLayout>
+        <!-- CONTENEDOR 2: UPDATES -->
+        <ScrollView
+            android:id="@+id/containerUpdates"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:fillViewport="true"
+            android:visibility="gone">
+            <include layout="@layout/dialog_updates" />
+        </ScrollView>
+
+        <!-- CONTENEDOR 3: PROFILE -->
+        <ScrollView
+            android:id="@+id/containerProfile"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:fillViewport="true"
+            android:visibility="gone">
+            <include layout="@layout/dialog_profile" />
+        </ScrollView>
+
+    </FrameLayout>
+
+    <!-- BARRA NAVEGACIÓN INFERIOR -->
+    <com.google.android.material.bottomnavigation.BottomNavigationView
+        android:id="@+id/bottomNavigation"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true"
+        android:background="#221d2d"
+        app:itemIconTint="@color/white"
+        app:itemTextColor="@color/white"
+        app:menu="@menu/bottom_nav_menu" />
+
+</RelativeLayout>
