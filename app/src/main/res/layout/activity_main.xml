@@ -51,22 +51,33 @@
                     android:layout_marginBottom="24dp">
 
                     <TextView
-                        android:id="@+id/tvTransactionCount"
+                        android:id="@+id/tvTransactionSum"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="0"
-                        android:textSize="56sp"
+                        android:text="S/ 0.00"
+                        android:textSize="50sp"
                         android:textStyle="bold"
                         android:textColor="#FFFFFF" />
 
                     <TextView
+                        android:id="@+id/tvTransactionCount"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="Yapeos Registrados"
-                        android:textSize="16sp"
+                        android:text="0 Yapeos de Hoy"
+                        android:textSize="14sp"
                         android:textStyle="bold"
                         android:textColor="#e8deff"
                         android:layout_marginTop="4dp" />
+
+                    <!-- Contador total histórico de la cuenta -->
+                    <TextView
+                        android:id="@+id/tvTransactionTotalCount"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Histórico: 0 Yapeos en la nube"
+                        android:textSize="12sp"
+                        android:textColor="#A0A8CC"
+                        android:layout_marginTop="2dp" />
                 </LinearLayout>
 
                 <TextView
