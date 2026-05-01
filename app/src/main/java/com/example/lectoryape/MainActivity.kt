@@ -463,23 +463,76 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    /** Actualiza el contador de notificaciones en la UI (desde Firebase usando Aggregate Query) */
+    /** Actualiza el contador de notificaciones y la suma en Soles en la UI */
     private fun updateNotificationCount() {
         lifecycleScope.launch {
             try {
-                // Obtener solo el conteo desde Firebase (Cuesta muchísimo menos que descargar documentos)
-                val count = withContext(Dispatchers.IO) { firebaseUploader.countUserYapeos() }
+                // Obtener conteo y sumatoria general 
+                // Para no hacer que la app se vuelva pesada pidiendo Firebase a cada rato, 
+                // contamos los valores usando el storage local que está siempre sincronizado
+                val (count, sum) = withContext(Dispatchers.IO) { calculateLocalYapeosTotals() }
 
-                binding.tvTransactionCount.text = count.toString()
+                val formattedSum = String.format(Locale.getDefault(), "S/ %.2f", sum)
+                val sumTextView = findViewById<android.widget.TextView>(R.id.tvTransactionSum)
+                val countTextView = findViewById<android.widget.TextView>(R.id.tvTransactionCount)
+                val totalCountTextView = findViewById<android.widget.TextView>(R.id.tvTransactionTotalCount)
+
+                // Suma y conteo local de HOY
+                sumTextView?.text = formattedSum
+                countTextView?.text = "$count Yapeos de Hoy"
+                
+                // Conteo Histórico Global en la Nube (Firebase Aggregate Query)
+                val totalCount = withContext(Dispatchers.IO) { firebaseUploader.countUserYapeos() }
+                totalCountTextView?.text = "Histórico: $totalCount Yapeos en la nube"
 
                 android.util.Log.d(
                         "MainActivity",
-                        "📊 Contador actualizado: $count yapeos en Firebase"
+                        "📊 Hero Section: Hoy -> $count ($formattedSum) | Histórico -> $totalCount"
                 )
             } catch (e: Exception) {
                 android.util.Log.e("MainActivity", "Error al actualizar contador: ${e.message}", e)
-                binding.tvTransactionCount.text = "0"
+                val sumTextView = findViewById<android.widget.TextView>(R.id.tvTransactionSum)
+                val countTextView = findViewById<android.widget.TextView>(R.id.tvTransactionCount)
+                val totalCountTextView = findViewById<android.widget.TextView>(R.id.tvTransactionTotalCount)
+                sumTextView?.text = "S/ 0.00"
+                countTextView?.text = "0 Yapeos de Hoy"
+                totalCountTextView?.text = "Histórico: 0 Yapeos en la nube"
             }
+        }
+    }
+    
+    private fun calculateLocalYapeosTotals(): Pair<Int, Double> {
+        return try {
+            val fileContent = storage.getAllNotificationsAsText()
+            if (fileContent.isBlank()) return Pair(0, 0.0)
+
+            val lines = fileContent.split("\n").filter { it.isNotBlank() }
+            if (lines.size <= 1) return Pair(0, 0.0) // solo hay cabecera
+
+            // Obtener fecha de hoy para filtrar (DEBE COINCIDIR CON DateFormatter 'yyyy-MM-dd')
+            val sdf = java.text.SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+            val todayStr = sdf.format(java.util.Date())
+
+            var countToday = 0
+            var sumToday = 0.0
+
+            // Omitir cabecera (lines[0])
+            for (i in 1 until lines.size) {
+                // Formato CSV local: fecha,nombre,monto,codigoSeguridad
+                val parts = lines[i].split(",")
+                if (parts.size >= 3) {
+                    val fechaHoraStr = parts[0]
+                    if (fechaHoraStr.startsWith(todayStr)) {
+                        countToday++
+                        val amount = parts[2].toDoubleOrNull() ?: 0.0
+                        sumToday += amount
+                    }
+                }
+            }
+            Pair(countToday, sumToday)
+        } catch (e: Exception) {
+            android.util.Log.e("MainActivity", "Error procesando CSV local", e)
+            Pair(0, 0.0)
         }
     }
 
@@ -497,6 +550,10 @@ class MainActivity : AppCompatActivity() {
             binding.btnEnableNotifications.text = "Acceso Habilitado"
             binding.btnEnableNotifications.alpha = 0.6f
             binding.cardRestrictedSettings.isVisible = false
+
+            // Activar la animación de pulso
+            val pulseAnim = android.view.animation.AnimationUtils.loadAnimation(this, R.anim.pulse_animation)
+            binding.statusIndicator.startAnimation(pulseAnim)
         } else {
             binding.tvPermissionStatus.text = "Servicio sin permiso "
             binding.statusIndicator.backgroundTintList =
@@ -505,6 +562,9 @@ class MainActivity : AppCompatActivity() {
             binding.btnEnableNotifications.text = "⚙Habilitar Acceso a Notificaciones"
             binding.btnEnableNotifications.alpha = 1.0f
             binding.cardRestrictedSettings.isVisible = true
+
+            // Detener animación si no hay permiso
+            binding.statusIndicator.clearAnimation()
         }
     }
 
