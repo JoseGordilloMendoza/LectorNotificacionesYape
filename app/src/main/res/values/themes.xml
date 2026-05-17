@@ -1,9 +1,11 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
     <!-- Base application theme. -->
     <style name="Base.Theme.LectorYape" parent="Theme.Material3.DayNight.NoActionBar">
-        <item name="colorPrimary">#5C35A0</item>
-        <item name="colorOnPrimary">#FFFFFF</item>
-        <item name="colorPrimaryVariant">#3700B3</item>
+        <item name="colorPrimary">@color/kaja_teal</item>
+        <item name="colorOnPrimary">@color/white</item>
+        <item name="colorPrimaryVariant">@color/kaja_teal_dark</item>
+        <item name="colorSecondary">@color/kaja_coral</item>
+        <item name="colorSecondaryVariant">@color/kaja_gold</item>
         <!-- Tipografía global amigable -->
         <item name="android:fontFamily">sans-serif-medium</item>
     </style>

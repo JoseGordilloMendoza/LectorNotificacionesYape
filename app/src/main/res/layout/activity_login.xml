@@ -6,35 +6,31 @@
     android:orientation="vertical"
     android:gravity="center"
     android:padding="32dp"
-    android:background="#151120">
+    android:background="@color/white">
 
     <!-- Logo/Icono -->
-    <TextView
-        android:layout_width="wrap_content"
+    <ImageView
+        android:layout_width="600dp"
         android:layout_height="wrap_content"
-        android:text="✨"
-        android:textSize="80sp"
-        android:layout_marginBottom="24dp"/>
+        android:adjustViewBounds="true"
+        android:scaleType="fitCenter"
+        android:src="@drawable/kaja"
+        android:layout_marginBottom="24dp"
+        android:contentDescription="Logo KAJA"/>
 
     <!-- Título -->
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Lector YAPE"
-        android:textSize="36sp"
-        android:textStyle="bold"
-        android:textColor="#FFFFFF"
-        android:layout_marginBottom="8dp"/>
+    
 
-    <!-- Subtítulo -->
+    <!-- Subtítulo con letterSpacing (idea #5) -->
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Sincroniza tus registros"
-        android:textSize="16sp"
-        android:textColor="#bdf4ff"
+        android:text="SINCRONIZA TUS REGISTROS"
+        android:textSize="12sp"
+        android:textColor="@color/kaja_blue_pale"
         android:gravity="center"
-        android:layout_marginBottom="48dp"/>
+        android:letterSpacing="0.15"
+        android:layout_marginBottom="32dp"/>
 
     <!-- Descripción -->
     <TextView
@@ -42,23 +38,30 @@
         android:layout_height="wrap_content"
         android:text="Inicia sesión con tu cuenta de Google para comenzar."
         android:textSize="15sp"
-        android:textColor="#e8dff5"
+        android:textColor="@color/kaja_teal_dark"
         android:gravity="center"
         android:layout_marginBottom="32dp"
         android:lineSpacingExtra="4dp"/>
 
-    <!-- Botón de Google Sign-In -->
+    <!-- Separador de circuito KAJA (idea #2) -->
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="12dp"
+        android:background="@drawable/divider_circuit"
+        android:layout_marginBottom="24dp"/>
+
+    <!-- Botón de Google Sign-In con gradiente diagonal (idea #6) -->
     <androidx.appcompat.widget.AppCompatButton
         android:id="@+id/btnGoogleSignIn"
         android:layout_width="match_parent"
         android:layout_height="56dp"
-        android:text="Iniciar sesión con Google"
-        android:textSize="16sp"
+        android:text="INICIAR SESIÓN CON GOOGLE"
+        android:textSize="14sp"
         android:textStyle="bold"
         android:textColor="@color/white"
-        android:background="@drawable/bg_pill_button"
+        android:letterSpacing="0.05"
+        android:background="@drawable/bg_pill_gradient"
         android:translationZ="4dp"
-        android:drawableStart="@android:drawable/ic_menu_info_details"
         android:paddingStart="24dp"
         android:paddingEnd="24dp" />
 
@@ -68,7 +71,7 @@
         android:layout_height="wrap_content"
         android:text="Al continuar, aceptas la sincronización segura de las alertas bancarias entrantes."
         android:textSize="12sp"
-        android:textColor="#948da2"
+        android:textColor="@color/kaja_teal"
         android:gravity="center"
         android:layout_marginTop="24dp"
         android:lineSpacingExtra="2dp"/>
@@ -79,7 +82,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginTop="24dp"
-        android:indeterminateTint="#00e3fd"
+        android:indeterminateTint="@color/kaja_coral"
         android:visibility="gone"/>
 
     <TextView
@@ -88,7 +91,7 @@
         android:layout_height="wrap_content"
         android:text="Iniciando sesión..."
         android:textSize="14sp"
-        android:textColor="#cbc3d9"
+        android:textColor="@color/kaja_teal_dark"
         android:layout_marginTop="16dp"
         android:visibility="gone"/>
 

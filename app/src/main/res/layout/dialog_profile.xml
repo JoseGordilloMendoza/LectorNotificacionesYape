@@ -4,32 +4,47 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#151120"
+    android:background="@color/kaja_bg_light"
     android:orientation="vertical">
 
+    <!-- ══════════════════════════════════════════════════ -->
+    <!--  HEADER COMPACTO horizontal (avatar + datos)       -->
+    <!-- ══════════════════════════════════════════════════ -->
 
-        <!-- ══════════════════════════════ -->
-        <!--  HEADER con gradiente oscuro  -->
-        <!-- ══════════════════════════════ -->
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:background="#1A1A2E"
-            android:paddingTop="28dp"
-            android:paddingBottom="24dp"
-            android:paddingStart="24dp"
-            android:paddingEnd="24dp"
-            android:gravity="center_horizontal">
+    <!-- Franja de acento superior con gradiente KAJA (4dp) -->
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="4dp"
+        android:background="@drawable/bg_pill_gradient"/>
 
-            <!-- Foto circular del usuario -->
+    <!-- Tarjeta horizontal compacta: avatar izq + info der -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:background="@color/white"
+        android:padding="16dp"
+        android:gravity="center_vertical"
+        android:elevation="4dp">
+
+        <!-- Avatar con anillo de gradiente (idea #8, ahora más compacto: 68dp) -->
+        <FrameLayout
+            android:layout_width="68dp"
+            android:layout_height="68dp"
+            android:layout_marginEnd="16dp">
+
+            <View
+                android:layout_width="68dp"
+                android:layout_height="68dp"
+                android:background="@drawable/bg_avatar_ring"/>
+
             <androidx.cardview.widget.CardView
-                android:layout_width="84dp"
-                android:layout_height="84dp"
-                app:cardCornerRadius="42dp"
-                app:cardElevation="4dp"
-                app:cardBackgroundColor="#2E2E4E"
-                android:layout_marginBottom="14dp">
+                android:layout_width="58dp"
+                android:layout_height="58dp"
+                android:layout_gravity="center"
+                app:cardCornerRadius="29dp"
+                app:cardElevation="0dp"
+                app:cardBackgroundColor="@color/white">
 
                 <ImageView
                     android:id="@+id/ivProfilePhoto"
@@ -40,181 +55,310 @@
                     android:contentDescription="Foto de perfil" />
 
             </androidx.cardview.widget.CardView>
+        </FrameLayout>
 
-            <!-- Nombre -->
+        <!-- Info del usuario -->
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical">
+
             <TextView
                 android:id="@+id/tvProfileName"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Nombre de Usuario"
-                android:textSize="18sp"
+                android:textSize="17sp"
                 android:textStyle="bold"
-                android:textColor="#FFFFFF"
-                android:layout_marginBottom="4dp"/>
+                android:textColor="@color/kaja_teal_dark"
+                android:layout_marginBottom="2dp"/>
 
-            <!-- Email -->
             <TextView
                 android:id="@+id/tvProfileEmail"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="usuario@email.com"
-                android:textSize="12sp"
-                android:textColor="#A0A8CC"
-                android:layout_marginBottom="14dp"/>
+                android:textSize="11sp"
+                android:textColor="@color/kaja_teal"
+                android:letterSpacing="0.03"
+                android:layout_marginBottom="6dp"/>
 
-            <!-- Badge de plan -->
+            <!-- Badge de plan inline -->
             <TextView
                 android:id="@+id/tvProfileStatus"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="PLAN TRIAL"
-                android:textSize="11sp"
+                android:textSize="10sp"
                 android:textStyle="bold"
-                android:textColor="#FFFFFF"
-                android:background="#7C4DFF"
-                android:paddingStart="14dp"
-                android:paddingEnd="14dp"
-                android:paddingTop="5dp"
-                android:paddingBottom="5dp"/>
-
-        </LinearLayout>
-
-        <!-- ══════════════════════════════ -->
-        <!--  CUERPO BLANCO con info       -->
-        <!-- ══════════════════════════════ -->
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:padding="20dp">
-
-            <!-- Fila: Rol del usuario -->
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:gravity="center_vertical"
-                android:paddingTop="8dp"
-                android:paddingBottom="8dp">
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="•"
-                    android:textSize="18sp"
-                    android:textColor="#5c35a0"
-                    android:layout_marginEnd="12dp"/>
-
-                <TextView
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:text="Rol"
-                    android:textSize="13sp"
-                    android:textColor="#cbc3d9"/>
-
-                <TextView
-                    android:id="@+id/tvProfileRole"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Owner"
-                    android:textSize="13sp"
-                    android:textStyle="bold"
-                    android:textColor="#FFFFFF"/>
-            </LinearLayout>
-
-            <!-- Divisor -->
-            <View android:layout_width="match_parent" android:layout_height="1dp"
-                android:background="#F0F0F0"/>
-
-            <!-- Fila: Fecha de registro -->
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:gravity="center_vertical"
-                android:paddingTop="8dp"
-                android:paddingBottom="8dp">
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="•"
-                    android:textSize="18sp"
-                    android:textColor="#5c35a0"
-                    android:layout_marginEnd="12dp"/>
-
-                <TextView
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:text="Miembro desde"
-                    android:textSize="13sp"
-                    android:textColor="#cbc3d9"/>
-
-                <TextView
-                    android:id="@+id/tvProfileCreatedAt"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="—"
-                    android:textSize="13sp"
-                    android:textStyle="bold"
-                    android:textColor="#FFFFFF"/>
-            </LinearLayout>
-
-            <!-- Divisor -->
-            <View android:layout_width="match_parent" android:layout_height="1dp"
-                android:background="#F0F0F0"/>
-
-            <!-- Fila: Fin de prueba -->
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:gravity="center_vertical"
-                android:paddingTop="8dp"
-                android:paddingBottom="16dp">
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="•"
-                    android:textSize="18sp"
-                    android:textColor="#5c35a0"
-                    android:layout_marginEnd="12dp"/>
-
-                <TextView
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:text="Vence el"
-                    android:textSize="13sp"
-                    android:textColor="#cbc3d9"/>
-
-                <TextView
-                    android:id="@+id/tvProfileTrialEnd"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="—"
-                    android:textSize="13sp"
-                    android:textStyle="bold"
-                    android:textColor="#FFFFFF"/>
-            </LinearLayout>
-
-            <!-- Botón Cerrar Sesión -->
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/btnProfileLogout"
-                android:layout_width="match_parent"
-                android:layout_height="48dp"
-                android:text="Cerrar Sesión"
-                android:textSize="14sp"
-                android:textStyle="bold"
-                android:textColor="#FFFFFF"
-                app:backgroundTint="#D32F2F"
-                app:cornerRadius="12dp"
-                app:icon="@drawable/ic_person"
-                app:iconTint="@android:color/white"/>
+                android:textColor="@color/kaja_teal_dark"
+                android:background="@color/kaja_gold"
+                android:letterSpacing="0.12"
+                android:paddingStart="10dp"
+                android:paddingEnd="10dp"
+                android:paddingTop="3dp"
+                android:paddingBottom="3dp"/>
 
         </LinearLayout>
 
     </LinearLayout>
+
+    <!-- ══════════════════════════════════════════ -->
+    <!--  MINI-PANEL de estadísticas (idea #10)    -->
+    <!-- ══════════════════════════════════════════ -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:background="@color/white"
+        android:elevation="4dp"
+        android:padding="16dp">
+
+        <!-- Stat 1: Total yapeos -->
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical"
+            android:gravity="center">
+
+            <TextView
+                android:id="@+id/tvStatTotal"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="—"
+                android:textSize="22sp"
+                android:textStyle="bold"
+                android:textColor="@color/kaja_teal_dark"/>
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="TOTAL"
+                android:textSize="9sp"
+                android:textColor="@color/kaja_blue_pale"
+                android:letterSpacing="0.15"/>
+
+        </LinearLayout>
+
+        <!-- Separador vertical -->
+        <View
+            android:layout_width="1dp"
+            android:layout_height="match_parent"
+            android:background="@color/kaja_pink_pale"/>
+
+        <!-- Stat 2: Este mes -->
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical"
+            android:gravity="center">
+
+            <TextView
+                android:id="@+id/tvStatMonth"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="—"
+                android:textSize="22sp"
+                android:textStyle="bold"
+                android:textColor="@color/kaja_coral"/>
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="ESTE MES"
+                android:textSize="9sp"
+                android:textColor="@color/kaja_blue_pale"
+                android:letterSpacing="0.15"/>
+
+        </LinearLayout>
+
+        <!-- Separador vertical -->
+        <View
+            android:layout_width="1dp"
+            android:layout_height="match_parent"
+            android:background="@color/kaja_pink_pale"/>
+
+        <!-- Stat 3: Hoy -->
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical"
+            android:gravity="center">
+
+            <TextView
+                android:id="@+id/tvStatToday"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="—"
+                android:textSize="22sp"
+                android:textStyle="bold"
+                android:textColor="@color/kaja_gold"/>
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="HOY"
+                android:textSize="9sp"
+                android:textColor="@color/kaja_blue_pale"
+                android:letterSpacing="0.15"/>
+
+        </LinearLayout>
+
+    </LinearLayout>
+
+    <!-- ══════════════════════════════════════════ -->
+    <!--  CUERPO: Info + ProgressBar + Botones     -->
+    <!-- ══════════════════════════════════════════ -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="20dp">
+
+        <!-- Sección: INFO DE CUENTA -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="INFORMACIÓN DE CUENTA"
+            android:textSize="10sp"
+            android:textStyle="bold"
+            android:textColor="@color/kaja_blue_pale"
+            android:letterSpacing="0.15"
+            android:layout_marginBottom="12dp"/>
+
+        <!-- Fila: Rol del usuario con ic_kaja_cross (idea #3) -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:paddingTop="8dp"
+            android:paddingBottom="8dp">
+
+            <ImageView
+                android:layout_width="12dp"
+                android:layout_height="12dp"
+                android:src="@drawable/ic_kaja_cross"
+                android:layout_marginEnd="12dp"/>
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Rol"
+                android:textSize="13sp"
+                android:textColor="@color/kaja_teal"/>
+
+            <TextView
+                android:id="@+id/tvProfileRole"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Owner"
+                android:textSize="13sp"
+                android:textStyle="bold"
+                android:textColor="@color/kaja_teal_dark"/>
+        </LinearLayout>
+
+        <!-- Divisor de circuito (idea #2) -->
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="12dp"
+            android:background="@drawable/divider_circuit"
+            android:layout_marginBottom="4dp"/>
+
+        <!-- Fila: Fecha de registro con ic_kaja_cross (idea #3) -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:paddingTop="8dp"
+            android:paddingBottom="8dp">
+
+            <ImageView
+                android:layout_width="12dp"
+                android:layout_height="12dp"
+                android:src="@drawable/ic_kaja_cross"
+                android:layout_marginEnd="12dp"/>
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Miembro desde"
+                android:textSize="13sp"
+                android:textColor="@color/kaja_teal"/>
+
+            <TextView
+                android:id="@+id/tvProfileCreatedAt"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="—"
+                android:textSize="13sp"
+                android:textStyle="bold"
+                android:textColor="@color/kaja_teal_dark"/>
+        </LinearLayout>
+
+        <!-- Divisor de circuito (idea #2) -->
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="12dp"
+            android:background="@drawable/divider_circuit"
+            android:layout_marginBottom="4dp"/>
+
+        <!-- Fila: Fin de prueba con ic_kaja_cross (idea #3) -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:paddingTop="8dp"
+            android:paddingBottom="8dp">
+
+            <ImageView
+                android:layout_width="12dp"
+                android:layout_height="12dp"
+                android:src="@drawable/ic_kaja_cross"
+                android:layout_marginEnd="12dp"/>
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Vence el"
+                android:textSize="13sp"
+                android:textColor="@color/kaja_teal"/>
+
+            <TextView
+                android:id="@+id/tvProfileTrialEnd"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="—"
+                android:textSize="13sp"
+                android:textStyle="bold"
+                android:textColor="@color/kaja_coral"/>
+        </LinearLayout>
+
+
+        <!-- Botón Cerrar Sesión (MaterialButton requerido por MainActivity.kt) -->
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnProfileLogout"
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:text="CERRAR SESIÓN"
+            android:textSize="13sp"
+            android:textStyle="bold"
+            android:textColor="#FFFFFF"
+            android:letterSpacing="0.08"
+            app:backgroundTint="@color/kaja_coral"
+            app:cornerRadius="16dp"
+            app:icon="@drawable/ic_person"
+            app:iconTint="@android:color/white"/>
+
+    </LinearLayout>
+
+</LinearLayout>

@@ -3,18 +3,59 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#151120">
+    android:background="@color/kaja_bg_light">
 
     <com.google.android.material.appbar.MaterialToolbar
         android:id="@+id/toolbar"
         android:layout_width="match_parent"
         android:layout_height="?attr/actionBarSize"
         android:layout_alignParentTop="true"
-        android:background="#151120"
-        android:theme="@style/ThemeOverlay.AppCompat.Dark.ActionBar"
-        app:titleTextColor="@android:color/white"
-        app:subtitleTextColor="#cbc3d9"
-        app:title="Home" />
+        android:background="@color/white"
+        android:elevation="4dp"
+        android:theme="@style/ThemeOverlay.AppCompat.Light"
+        app:title="">
+
+        <!-- Contenido custom del toolbar -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:paddingStart="4dp"
+            android:paddingEnd="16dp">
+
+            <!-- Logo KAJA pequeño -->
+            <ImageView
+                android:layout_width="72dp"
+                android:layout_height="wrap_content"
+                android:adjustViewBounds="true"
+                android:scaleType="fitCenter"
+                android:src="@drawable/kaja"
+                android:contentDescription="KAJA"/>
+
+            <!-- Separador vertical fino -->
+            <View
+                android:layout_width="1dp"
+                android:layout_height="20dp"
+                android:background="@color/kaja_pink_pale"
+                android:layout_marginStart="12dp"
+                android:layout_marginEnd="12dp"/>
+
+            <!-- Título de la pestaña en negrita -->
+            <TextView
+                android:id="@+id/tvToolbarTitle"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="INICIO"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                android:textColor="@color/kaja_teal_dark"
+                android:letterSpacing="0.08"/>
+
+        </LinearLayout>
+
+    </com.google.android.material.appbar.MaterialToolbar>
 
     <FrameLayout
         android:id="@+id/screensContainer"
@@ -43,7 +84,7 @@
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:background="@drawable/bg_hero_gradient"
+                    android:background="@drawable/bg_hero_polygon"
                     android:orientation="vertical"
                     android:padding="32dp"
                     android:gravity="center"
@@ -63,10 +104,11 @@
                         android:id="@+id/tvTransactionCount"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="0 Yapeos de Hoy"
-                        android:textSize="14sp"
+                        android:text="0 TRANSACCIONES DE HOY"
+                        android:textSize="12sp"
                         android:textStyle="bold"
-                        android:textColor="#e8deff"
+                        android:textColor="@color/kaja_gold"
+                        android:letterSpacing="0.15"
                         android:layout_marginTop="4dp" />
 
                     <!-- Contador total histórico de la cuenta -->
@@ -74,18 +116,26 @@
                         android:id="@+id/tvTransactionTotalCount"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="Histórico: 0 Yapeos en la nube"
+                        android:text="Histórico: 0 Transacciones en la nube"
                         android:textSize="12sp"
-                        android:textColor="#A0A8CC"
+                        android:textColor="@color/white"
+                        android:alpha="0.8"
                         android:layout_marginTop="2dp" />
                 </LinearLayout>
+
+                <!-- Separador de circuito KAJA (idea #2) -->
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="12dp"
+                    android:background="@drawable/divider_circuit"
+                    android:layout_marginBottom="20dp"/>
 
                 <TextView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:text="El servicio de lectura escuchará automáticamente."
                     android:textSize="14sp"
-                    android:textColor="#cbc3d9"
+                    android:textColor="@color/kaja_teal_dark"
                     android:layout_marginBottom="24dp"
                     android:gravity="center"/>
 
@@ -96,7 +146,19 @@
                     android:background="@drawable/bg_dark_card"
                     android:orientation="vertical"
                     android:padding="20dp"
+                    android:elevation="2dp"
                     android:layout_marginBottom="24dp">
+
+                    <!-- Título con letterSpacing (idea #5) -->
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="ESTADO DEL SERVICIO"
+                        android:textSize="10sp"
+                        android:textStyle="bold"
+                        android:textColor="@color/kaja_blue_pale"
+                        android:letterSpacing="0.15"
+                        android:layout_marginBottom="12dp"/>
 
                     <LinearLayout
                         android:layout_width="match_parent"
@@ -109,7 +171,7 @@
                             android:layout_width="12dp"
                             android:layout_height="12dp"
                             android:background="@drawable/circle_indicator"
-                            android:backgroundTint="#ffb4ab"
+                            android:backgroundTint="@color/kaja_coral"
                             android:layout_marginEnd="12dp"/>
 
                         <TextView
@@ -120,14 +182,15 @@
                             android:text="Servicio Inactivo"
                             android:textSize="15sp"
                             android:textStyle="bold"
-                            android:textColor="#e8dff5"/>
+                            android:textColor="@color/kaja_teal_dark"/>
 
                     </LinearLayout>
 
+                    <!-- Separador de circuito KAJA (idea #2) -->
                     <View
                         android:layout_width="match_parent"
-                        android:layout_height="1dp"
-                        android:background="#2c2738"
+                        android:layout_height="12dp"
+                        android:background="@drawable/divider_circuit"
                         android:layout_marginTop="16dp"
                         android:layout_marginBottom="16dp"/>
 
@@ -149,14 +212,14 @@
                                 android:text="Escucha Background"
                                 android:textSize="14sp"
                                 android:textStyle="bold"
-                                android:textColor="#FFFFFF"/>
+                                android:textColor="@color/kaja_teal_dark"/>
 
                             <TextView
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
                                 android:text="Mantener activo el hilo principal"
                                 android:textSize="12sp"
-                                android:textColor="#948da2"
+                                android:textColor="@color/kaja_teal"
                                 android:layout_marginTop="2dp"/>
                         </LinearLayout>
 
@@ -164,24 +227,22 @@
                             android:id="@+id/switchPersistentNotification"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:checked="false"
-                            app:useMaterialThemeColors="false"
-                            app:thumbTint="#cdbdff"
-                            app:trackTint="#494456"/>
+                            android:checked="false" />
                     </LinearLayout>
 
                 </LinearLayout>
 
-                <!-- ENABLE PERMISSION BUTTON -->
+                <!-- ENABLE PERMISSION BUTTON (idea #6: gradiente diagonal) -->
                 <androidx.appcompat.widget.AppCompatButton
                     android:id="@+id/btnEnableNotifications"
                     android:layout_width="match_parent"
                     android:layout_height="56dp"
-                    android:text="Habilitar Acceso"
-                    android:textSize="16sp"
+                    android:text="HABILITAR ACCESO"
+                    android:textSize="15sp"
                     android:textStyle="bold"
-                    android:background="@drawable/bg_pill_button"
+                    android:background="@drawable/bg_pill_gradient"
                     android:textColor="@color/white"
+                    android:letterSpacing="0.08"
                     android:translationZ="4dp"
                     android:layout_marginBottom="24dp"/>
 
@@ -191,42 +252,41 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:background="@drawable/bg_dark_card"
-                    android:backgroundTint="#2c1a1a"
+                    android:backgroundTint="@color/kaja_pink_pale"
                     android:orientation="vertical"
                     android:padding="20dp"
                     android:layout_marginBottom="24dp">
 
-                    <LinearLayout
-                        android:layout_width="match_parent"
+                <!-- Cruz KAJA (idea #3) como bullet de warning Xiaomi -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:layout_marginBottom="12dp">
+
+                    <ImageView
+                        android:layout_width="14dp"
+                        android:layout_height="14dp"
+                        android:src="@drawable/ic_kaja_cross"
+                        android:layout_marginEnd="10dp"/>
+
+                    <TextView
+                        android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:orientation="horizontal"
-                        android:gravity="center_vertical"
-                        android:layout_marginBottom="12dp">
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="D"
-                            android:textSize="20sp"
-                            android:textColor="#ffb4a0"
-                            android:textStyle="bold"
-                            android:layout_marginEnd="12dp"/>
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="Acceso denegado"
-                            android:textSize="15sp"
-                            android:textStyle="bold"
-                            android:textColor="#ffb4a0"/>
-                    </LinearLayout>
+                        android:text="ACCESO RESTRINGIDO"
+                        android:textSize="11sp"
+                        android:textStyle="bold"
+                        android:textColor="@color/kaja_coral"
+                        android:letterSpacing="0.12"/>
+                </LinearLayout>
 
                     <TextView
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:text="1. Ve a Info. de la App\n2. Toca los 3 puntos arriba a la derecha\n3. Permitir ajustes restringidos\n4. Vuelve e intenta de nuevo"
                         android:textSize="13sp"
-                        android:textColor="#dfc3c3"
+                        android:textColor="@color/kaja_teal_dark"
                         android:lineSpacingExtra="4dp"
                         android:layout_marginBottom="16dp"/>
 
@@ -236,9 +296,9 @@
                         android:layout_width="match_parent"
                         android:layout_height="48dp"
                         android:text="Ir a Info. de la App"
-                        android:textColor="#ffb4a0"
-                        app:strokeColor="#ffb4a0"
-                        app:cornerRadius="100dp"/>
+                        android:textColor="@color/kaja_coral"
+                        app:strokeColor="@color/kaja_coral"
+                        app:cornerRadius="16dp"/>
 
                 </LinearLayout>
 
@@ -250,7 +310,7 @@
                     android:textSize="15sp"
                     android:textStyle="bold"
                     android:background="@drawable/bg_pill_teal"
-                    android:textColor="#001f24"
+                    android:textColor="@color/white"
                     android:translationZ="4dp"
                     android:layout_marginBottom="16dp"/>
 
@@ -260,9 +320,10 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:background="@drawable/bg_dark_card"
-                    android:backgroundTint="#2c2738"
+                    android:backgroundTint="@color/white"
                     android:orientation="vertical"
                     android:padding="20dp"
+                    android:elevation="4dp"
                     android:visibility="gone"
                     android:layout_marginBottom="16dp">
 
@@ -278,7 +339,7 @@
                             android:layout_height="wrap_content"
                             android:text="Aviso"
                             android:textSize="22sp"
-                            android:textColor="#bdf4ff"
+                            android:textColor="@color/kaja_gold"
                             android:textStyle="bold"
                             android:layout_marginEnd="12dp"/>
 
@@ -294,7 +355,7 @@
                                 android:text="Nueva versión"
                                 android:textSize="15sp"
                                 android:textStyle="bold"
-                                android:textColor="#FFFFFF"/>
+                                android:textColor="@color/kaja_teal_dark"/>
 
                             <TextView
                                 android:id="@+id/tvUpdateVersion"
@@ -302,10 +363,28 @@
                                 android:layout_height="wrap_content"
                                 android:text="v?.?.?"
                                 android:textSize="12sp"
-                                android:textColor="#bdf4ff" />
+                                android:textColor="@color/kaja_teal" />
                         </LinearLayout>
 
                     </LinearLayout>
+
+                    <!-- Separador de circuito KAJA (idea #2) -->
+                    <View
+                        android:layout_width="match_parent"
+                        android:layout_height="12dp"
+                        android:background="@drawable/divider_circuit"
+                        android:layout_marginBottom="16dp"/>
+
+                    <!-- Título con letterSpacing (idea #5) -->
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="NUEVA VERSIÓN DISPONIBLE"
+                        android:textSize="10sp"
+                        android:textStyle="bold"
+                        android:textColor="@color/kaja_blue_pale"
+                        android:letterSpacing="0.15"
+                        android:layout_marginBottom="8dp"/>
 
                     <TextView
                         android:id="@+id/tvUpdateReleaseNotes"
@@ -313,18 +392,19 @@
                         android:layout_height="wrap_content"
                         android:text="Mejoras introducidas"
                         android:textSize="13sp"
-                        android:textColor="#cbc3d9"
+                        android:textColor="@color/kaja_teal_dark"
                         android:layout_marginBottom="16dp"/>
 
                     <androidx.appcompat.widget.AppCompatButton
                         android:id="@+id/btnInstallUpdate"
                         android:layout_width="match_parent"
                         android:layout_height="48dp"
-                        android:text="Instalar ahora"
-                        android:textSize="14sp"
+                        android:text="INSTALAR AHORA"
+                        android:textSize="13sp"
                         android:textStyle="bold"
                         android:textColor="#FFFFFF"
-                        android:background="@drawable/bg_pill_button" />
+                        android:letterSpacing="0.08"
+                        android:background="@drawable/bg_pill_gradient" />
                 </LinearLayout>
 
             </LinearLayout>
@@ -358,9 +438,10 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_alignParentBottom="true"
-        android:background="#221d2d"
-        app:itemIconTint="@color/white"
-        app:itemTextColor="@color/white"
+        android:background="@color/white"
+        android:elevation="8dp"
+        app:itemIconTint="@color/kaja_teal"
+        app:itemTextColor="@color/kaja_teal_dark"
         app:menu="@menu/bottom_nav_menu" />
 
 </RelativeLayout>

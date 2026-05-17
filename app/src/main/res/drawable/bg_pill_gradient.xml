@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Idea #6: Botón CTA con gradiente diagonal del logo KAJA (Coral → Teal) -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+    <gradient
+        android:angle="135"
+        android:startColor="#EF6A62"
+        android:endColor="#1A7F7C"
+        android:type="linear"/>
+    <corners android:radius="16dp"/>
+</shape>

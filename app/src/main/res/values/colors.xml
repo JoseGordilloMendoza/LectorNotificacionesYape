@@ -3,11 +3,19 @@
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
     
-    <!-- Colores principales de la app -->
+    <!-- KAJA Brand Colors -->
+    <color name="kaja_teal">#1A7F7C</color>
+    <color name="kaja_teal_dark">#125957</color>
+    <color name="kaja_coral">#EF6A62</color>
+    <color name="kaja_gold">#EAB253</color>
+    <color name="kaja_blue_pastel">#80B4CB</color>
+    <color name="kaja_blue_pale">#8EB8C5</color>
+    <color name="kaja_pink_pale">#FCDAD2</color>
+    <color name="kaja_bg_light">#F8FBFA</color>
+    
+    <!-- Legacy colores -->
     <color name="purple_500">#6200EE</color>
     <color name="purple_700">#3700B3</color>
-    
-    <!-- Colores de YAPE (para uso futuro) -->
     <color name="yape_purple">#722C8D</color>
     <color name="yape_green">#00D673</color>
 </resources>

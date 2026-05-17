@@ -239,12 +239,14 @@ class MainActivity : AppCompatActivity() {
         val firstName = user?.displayName?.split(" ")?.firstOrNull() ?: "Usuario"
         
         val title = when (navId) {
-            R.id.nav_home -> "Hola, $firstName"
-            R.id.nav_updates -> "Novedades"
-            R.id.nav_profile -> "Mi Cuenta"
-            else -> "Lector Yape"
+            R.id.nav_home     -> "HOLA, ${firstName.uppercase()}"
+            R.id.nav_updates  -> "NOVEDADES"
+            R.id.nav_profile  -> "MI CUENTA"
+            else              -> "KAJA"
         }
-        supportActionBar?.title = title
+        // Escribir en el TextView custom del toolbar
+        supportActionBar?.title = ""
+        findViewById<android.widget.TextView>(R.id.tvToolbarTitle)?.text = title
     }
 
     private fun setupProfileScreen() {
