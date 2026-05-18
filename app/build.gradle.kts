@@ -1,7 +1,11 @@
+import java.util.Properties
+import java.io.FileInputStream
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     id("com.google.gms.google-services")
+    id("org.jetbrains.kotlin.plugin.serialization") version "1.9.0"
 }
 
 android {
@@ -14,8 +18,17 @@ android {
         targetSdk = 36
         versionCode = 11
         versionName = "2.1"
-
+        
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+
+        // 1. Cargar el archivo local.properties (que está en la raíz del proyecto)
+        val properties = Properties()
+        properties.load(FileInputStream(project.rootProject.file("local.properties")))
+
+        // 2. Inyectar esos valores como si fueran constantes de Android
+        // Esto hace que "BuildConfig.SUPABASE_URL" exista en todo el proyecto
+        buildConfigField("String", "SUPABASE_URL", "\"${properties.getProperty("SUPABASE_URL")}\"")
+        buildConfigField("String", "SUPABASE_ANON_KEY", "\"${properties.getProperty("SUPABASE_ANON_KEY")}\"")
     }
 
     buildTypes {
@@ -36,6 +49,7 @@ android {
     }
     buildFeatures {
         viewBinding = true
+        buildConfig = true
     }
     
     packaging {
@@ -52,6 +66,7 @@ android {
             )
         }
     }
+    
 }
 
 dependencies {
@@ -84,4 +99,16 @@ dependencies {
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
+
+    val supabaseVersion = "2.2.3"
+    val ktorVersion = "2.3.9"
+    
+    // Módulo de Autenticación de Supabase (GoTrue)
+    implementation("io.github.jan-tennert.supabase:gotrue-kt:$supabaseVersion")
+    
+    // Motor HTTP para Supabase
+    implementation("io.ktor:ktor-client-android:$ktorVersion")
+    
+    // Serialización JSON requerida por Supabase
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.0")
 }
