@@ -14,7 +14,6 @@ import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.isVisible
 import com.example.lectoryape.R
-import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -41,7 +40,6 @@ class AppUpdater(private val activity: AppCompatActivity) {
         private const val APK_FILENAME = "lector_yape_update.apk"
     }
 
-    private val firestore = FirebaseFirestore.getInstance()
     private var downloadId: Long = -1L
     private var downloadReceiver: BroadcastReceiver? = null
 
@@ -88,17 +86,8 @@ class AppUpdater(private val activity: AppCompatActivity) {
      * Consulta el documento Firestore con la info de la última versión.
      */
     private suspend fun fetchVersionInfo(): Map<String, Any>? {
-        return try {
-            val snapshot = firestore
-                .collection(FIRESTORE_COLLECTION)
-                .document(FIRESTORE_DOCUMENT)
-                .get()
-                .await()
-            snapshot.data
-        } catch (e: Exception) {
-            Log.e(TAG, "❌ Error consultando Firestore para versión: ${e.message}")
-            null
-        }
+        Log.w(TAG, "⚠️ Actualizaciones OTA deshabilitadas temporalmente por migración a Django.")
+        return null
     }
 
     /**

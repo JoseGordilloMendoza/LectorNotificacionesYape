@@ -29,6 +29,7 @@ android {
         // Esto hace que "BuildConfig.SUPABASE_URL" exista en todo el proyecto
         buildConfigField("String", "SUPABASE_URL", "\"${properties.getProperty("SUPABASE_URL")}\"")
         buildConfigField("String", "SUPABASE_ANON_KEY", "\"${properties.getProperty("SUPABASE_ANON_KEY")}\"")
+        buildConfigField("String", "BACKEND_URL", "\"${properties.getProperty("BACKEND_URL", "http://10.0.2.2:8000/")}\"")
     }
 
     buildTypes {
@@ -106,9 +107,17 @@ dependencies {
     // Módulo de Autenticación de Supabase (GoTrue)
     implementation("io.github.jan-tennert.supabase:gotrue-kt:$supabaseVersion")
     
+    // Módulo de Base de Datos de Supabase (Postgrest)
+    implementation("io.github.jan-tennert.supabase:postgrest-kt:$supabaseVersion")
+    
     // Motor HTTP para Supabase
     implementation("io.ktor:ktor-client-android:$ktorVersion")
     
     // Serialización JSON requerida por Supabase
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.0")
+    
+    // Retrofit y Gson para backend Django
+    implementation("com.squareup.retrofit2:retrofit:2.9.0")
+    implementation("com.squareup.retrofit2:converter-gson:2.9.0")
+    implementation("com.squareup.okhttp3:logging-interceptor:4.11.0")
 }

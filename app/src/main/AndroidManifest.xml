@@ -34,10 +34,23 @@
         android:label="@string/app_name"
         android:roundIcon="@mipmap/ic_kaja_round"
         android:supportsRtl="true"
+        android:usesCleartextTraffic="true"
         android:theme="@style/Theme.LectorYape">
         <activity
             android:name=".MainActivity"
             android:exported="false"/>
+        <activity
+            android:name=".tesis.TesisShiftActivity"
+            android:exported="false" />
+        <activity
+            android:name=".tesis.TesisQueueActivity"
+            android:exported="false" />
+        <activity
+            android:name=".tesis.TesisOwnerActivity"
+            android:exported="false" />
+        <activity
+            android:name=".tesis.TesisTeamActivity"
+            android:exported="false" />
 
         <!-- Pantalla de Login -->
         <activity

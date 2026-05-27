@@ -8,10 +8,9 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.view.isVisible
 import androidx.lifecycle.lifecycleScope
-import com.example.lectoryape.auth.FirebaseAuthManager
 import com.example.lectoryape.auth.SupabaseAuthManager
 import com.example.lectoryape.databinding.ActivityLoginBinding
-import com.example.lectoryape.firebase.FirebaseUploader
+import com.example.lectoryape.network.RetrofitClient
 import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.gms.auth.api.signin.GoogleSignInClient
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions
@@ -22,13 +21,16 @@ class LoginActivity : AppCompatActivity() {
     
     private lateinit var binding: ActivityLoginBinding
     private lateinit var supabaseAuthManager: SupabaseAuthManager
-    private lateinit var authManager: FirebaseAuthManager
-    private lateinit var firebaseUploader: FirebaseUploader
     private lateinit var googleSignInClient: GoogleSignInClient
+    private var selectedMode: String = MODE_POS
     
     companion object {
         private const val TAG = "LoginActivity"
         private const val RC_SIGN_IN = 9001
+        
+        const val PREF_APP_MODE = "app_mode"
+        const val MODE_POS = "modo_pos"
+        const val MODE_TESIS = "modo_tesis"
     }
     
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -43,9 +45,7 @@ class LoginActivity : AppCompatActivity() {
         // Inicializar manager de Supabase
         supabaseAuthManager = SupabaseAuthManager()
         
-        // Inicializar managers de Firebase
-        authManager = FirebaseAuthManager(this)
-        firebaseUploader = FirebaseUploader(this)
+
         
         // Configurar Cliente de Google Sign-In Nativo
         val gso = GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
@@ -54,26 +54,84 @@ class LoginActivity : AppCompatActivity() {
             .build()
         googleSignInClient = GoogleSignIn.getClient(this, gso)
         
-        // Si ya está logueado en Supabase Y Firebase, ir directo a MainActivity
-        if (supabaseAuthManager.isUserSignedIn() && authManager.isSignedIn()) {
-            Log.d(TAG, "Usuario ya logueado en Supabase y Firebase")
+        // Si ya está logueado en Supabase, ir directo a MainActivity
+        if (supabaseAuthManager.isUserSignedIn()) {
+            Log.d(TAG, "Usuario ya logueado en Supabase")
             navigateToMain()
             return
-        }
-        
-        // Si el estado es inconsistente (ej. logueado en Firebase pero no Supabase),
-        // forzamos el cierre de sesión silencioso para que vuelva a pedir la cuenta
-        if (authManager.isSignedIn() && !supabaseAuthManager.isUserSignedIn()) {
-            authManager.signOut()
-            googleSignInClient.signOut()
         }
         
         setupUI()
     }
     
     private fun setupUI() {
+        // Restaurar selección previa si existe
+        val prefs = getSharedPreferences("app_prefs", android.content.Context.MODE_PRIVATE)
+        selectedMode = prefs.getString(PREF_APP_MODE, MODE_POS) ?: MODE_POS
+        updateCardSelection()
+
+        binding.cardModePos.setOnClickListener {
+            selectedMode = MODE_POS
+            updateCardSelection()
+        }
+
+        binding.cardModeTesis.setOnClickListener {
+            selectedMode = MODE_TESIS
+            updateCardSelection()
+        }
+
         binding.btnGoogleSignIn.setOnClickListener {
+            // Guardar el modo seleccionado
+            prefs.edit().putString(PREF_APP_MODE, selectedMode).apply()
+            
             performGoogleSignIn()
+        }
+    }
+
+    private fun updateCardSelection() {
+        val tealColor = getColor(R.color.kaja_teal)
+        val tealDarkColor = getColor(R.color.kaja_teal_dark)
+        val grayColor = android.graphics.Color.parseColor("#9E9E9E")
+        val lightGrayColor = android.graphics.Color.parseColor("#E0E0E0")
+        val bgLightColor = getColor(R.color.kaja_bg_light)
+        val whiteColor = getColor(R.color.white)
+
+        if (selectedMode == MODE_POS) {
+            // Card POS Activo
+            binding.cardModePos.strokeWidth = 4
+            binding.cardModePos.strokeColor = tealColor
+            binding.cardModePos.cardElevation = 8f
+            binding.cardModePos.setCardBackgroundColor(whiteColor)
+            // TextViews del card no son accesibles directamente por binding si no tienen ID,
+            // pero añadimos IDs en el XML para cambiar los colores.
+            binding.ivIconPos.setColorFilter(tealColor)
+            binding.tvTitlePos.setTextColor(tealDarkColor)
+            
+            // Card Tesis Inactivo
+            binding.cardModeTesis.strokeWidth = 2
+            binding.cardModeTesis.strokeColor = lightGrayColor
+            binding.cardModeTesis.cardElevation = 0f
+            binding.cardModeTesis.setCardBackgroundColor(bgLightColor)
+            binding.ivIconTesis.setColorFilter(grayColor)
+            binding.tvTitleTesis.setTextColor(grayColor)
+            binding.tvSubTesis.setTextColor(grayColor)
+        } else {
+            // Card Tesis Activo
+            binding.cardModeTesis.strokeWidth = 4
+            binding.cardModeTesis.strokeColor = tealColor
+            binding.cardModeTesis.cardElevation = 8f
+            binding.cardModeTesis.setCardBackgroundColor(whiteColor)
+            binding.ivIconTesis.setColorFilter(tealColor)
+            binding.tvTitleTesis.setTextColor(tealDarkColor)
+            binding.tvSubTesis.setTextColor(tealColor)
+
+            // Card POS Inactivo
+            binding.cardModePos.strokeWidth = 2
+            binding.cardModePos.strokeColor = lightGrayColor
+            binding.cardModePos.cardElevation = 0f
+            binding.cardModePos.setCardBackgroundColor(bgLightColor)
+            binding.ivIconPos.setColorFilter(grayColor)
+            binding.tvTitlePos.setTextColor(grayColor)
         }
     }
     
@@ -106,19 +164,44 @@ class LoginActivity : AppCompatActivity() {
                         val supabaseSuccess = supabaseAuthManager.loginWithGoogleIdToken(idToken)
                         
                         if (supabaseSuccess) {
-                            // 2. Iniciar sesión en Firebase (para mantener compatibilidad temporal)
-                            binding.tvStatus.text = "Sincronizando plataforma..."
-                            val firebaseUser = authManager.firebaseAuthWithGoogle(data)
+                            val prefs = getSharedPreferences("app_prefs", android.content.Context.MODE_PRIVATE)
+                            val mode = prefs.getString(PREF_APP_MODE, MODE_POS)
                             
-                            if (firebaseUser != null) {
-                                // 3. Guardar en Firestore (Compatibilidad)
-                                firebaseUploader.saveUser(firebaseUser)
-                                
-                                Toast.makeText(this@LoginActivity, "✅ Sesión Híbrida Exitosa", Toast.LENGTH_SHORT).show()
-                                navigateToMain()
+                            if (mode == MODE_POS) {
+                                // Modo Empresa POS: Verificar en Django
+                                binding.tvStatus.text = "Verificando empresa..."
+                                try {
+                                    val response = RetrofitClient.api.getBootstrap()
+                                    if (response.isSuccessful) {
+                                        val bootstrap = response.body()
+                                        if (bootstrap?.requiresOnboarding == true) {
+                                            showLoading(false)
+                                            Toast.makeText(this@LoginActivity, "Debes crear tu empresa en la web primero", Toast.LENGTH_LONG).show()
+                                            supabaseAuthManager.signOut()
+                                            googleSignInClient.signOut()
+                                        } else {
+                                            // Guardar el tenantId en SharedPreferences para usarlo en el servicio
+                                            val firstTenantId = bootstrap?.memberships?.firstOrNull()?.tenant?.id
+                                            if (firstTenantId != null) {
+                                                prefs.edit().putString("tenant_id", firstTenantId).apply()
+                                            }
+                                            Toast.makeText(this@LoginActivity, "✅ Sesión POS Exitosa", Toast.LENGTH_SHORT).show()
+                                            navigateToMain()
+                                        }
+                                    } else {
+                                        showLoading(false)
+                                        Toast.makeText(this@LoginActivity, "Error del servidor: ${response.code()}", Toast.LENGTH_SHORT).show()
+                                        navigateToMain()
+                                    }
+                                } catch (e: Exception) {
+                                    Log.e(TAG, "Error conectando al backend Django", e)
+                                    Toast.makeText(this@LoginActivity, "Backend local no responde, usando offline", Toast.LENGTH_SHORT).show()
+                                    navigateToMain()
+                                }
                             } else {
-                                showLoading(false)
-                                Toast.makeText(this@LoginActivity, "Fallo al conectar con el servidor antiguo", Toast.LENGTH_SHORT).show()
+                                // Modo Microempresa Tesis: Omitir Django
+                                Toast.makeText(this@LoginActivity, "✅ Sesión Tesis Exitosa", Toast.LENGTH_SHORT).show()
+                                navigateToMain()
                             }
                         } else {
                             showLoading(false)

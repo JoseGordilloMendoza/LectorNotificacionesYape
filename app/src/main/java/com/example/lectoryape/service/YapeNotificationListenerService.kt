@@ -12,7 +12,14 @@ import android.service.notification.NotificationListenerService
 import android.service.notification.StatusBarNotification
 import android.util.Log
 import androidx.annotation.RequiresApi
-import com.example.lectoryape.firebase.FirebaseUploader
+import com.example.lectoryape.auth.SupabaseAuthManager
+import com.example.lectoryape.LoginActivity.Companion.MODE_POS
+import com.example.lectoryape.LoginActivity.Companion.MODE_TESIS
+import com.example.lectoryape.LoginActivity.Companion.PREF_APP_MODE
+import com.example.lectoryape.network.RetrofitClient
+import com.example.lectoryape.network.models.NotificationPayload
+import com.example.lectoryape.auth.SupabaseManager
+import io.github.jan.supabase.postgrest.postgrest
 import com.example.lectoryape.models.YapeNotificationRaw
 import com.example.lectoryape.storage.YapeNotificationStorage
 import com.example.lectoryape.utils.NotificationHelper
@@ -28,7 +35,7 @@ import kotlinx.coroutines.launch
 class YapeNotificationListenerService : NotificationListenerService() {
     // se usa para seguridad con posibles problemas de arranque
     private val storage by lazy { YapeNotificationStorage(applicationContext) }
-    private val firebaseUploader by lazy { FirebaseUploader(applicationContext) }
+    private val supabaseAuthManager by lazy { SupabaseAuthManager() }
     private val notificationHelper by lazy { NotificationHelper(applicationContext) }
     
     //hash / set :V para evitar duplicados
@@ -38,15 +45,16 @@ class YapeNotificationListenerService : NotificationListenerService() {
     private val prefs: SharedPreferences by lazy {
         applicationContext.getSharedPreferences("yape_listener_prefs", Context.MODE_PRIVATE)
     }
+
+    private val modePrefs: SharedPreferences by lazy {
+        applicationContext.getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
+    }
     
     // Wake lock para mantener el servicio activo
     private var wakeLock: PowerManager.WakeLock? = null
     
     // Scope con lifecycle: se cancela en onDestroy para evitar memory leaks
     private val serviceScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
-    
-    // Tarea encargada de enviar el Heartbeat a Firebase
-    private var heartbeatJob: Job? = null
     
     // BroadcastReceiver para escuchar cuando el usuario cambia el switch
     private val toggleReceiver = object : BroadcastReceiver() {
@@ -60,11 +68,9 @@ class YapeNotificationListenerService : NotificationListenerService() {
                     if (isEnabled) {
                         acquireWakeLock()
                         startForegroundService()
-                        startHeartbeat()
                     } else {
                         stopForegroundService()
                         releaseWakeLock()
-                        stopHeartbeatAndSendOffline()
                     }
                 }
             }
@@ -168,12 +174,44 @@ class YapeNotificationListenerService : NotificationListenerService() {
                 sendBroadcast(Intent(ACTION_NOTIFICATION_SAVED))
             }
 
-            // subir a Firebase usando el scope del servicio (tiene lifecycle)
+            // Subir según el modo
             serviceScope.launch {
                 try {
-                    firebaseUploader.uploadNotification(yapePlinPayment)
+                    val appMode = modePrefs.getString(PREF_APP_MODE, MODE_POS)
+                    if (appMode == MODE_POS) {
+                        // Enviar a Django
+                        val tenantId = applicationContext.getSharedPreferences("app_prefs", Context.MODE_PRIVATE).getString("tenant_id", "")
+                        val rawJson = sbn.notification.extras.getString("android.text") ?: ""
+                        if (!tenantId.isNullOrEmpty()) {
+                            val payload = NotificationPayload(
+                                tenant = tenantId,
+                                branch = null,
+                                amount = yapePlinPayment.amount,
+                                sender_name = yapePlinPayment.name,
+                                reference_code = yapePlinPayment.securityCode,
+                                wallet_type = yapePlinPayment.walletType,
+                                raw_payload = rawJson
+                            )
+                            val response = RetrofitClient.api.sendNotification(payload)
+                            if (!response.isSuccessful) {
+                                Log.e(TAG, "Error Django: ${response.code()}")
+                            }
+                        }
+                    } else {
+                        // Enviar a Supabase
+                        val currentUser = SupabaseManager.auth.currentUserOrNull()
+                        if (currentUser != null) {
+                            val transaction = com.example.lectoryape.models.TransactionModel(
+                                owner_id = currentUser.id,
+                                monto = yapePlinPayment.amount,
+                                nombre_remitente = yapePlinPayment.name,
+                                codigo_referencia = yapePlinPayment.securityCode
+                            )
+                            SupabaseManager.client.postgrest.from("transactions").insert(transaction)
+                        }
+                    }
                 } catch (e: Exception) {
-                    Log.e(TAG, "Error subiendo a Firebase: ${e.message}")
+                    Log.e(TAG, "Error subiendo notificación: ${e.message}")
                 }
             }
         } catch (e: Exception) {
@@ -204,19 +242,11 @@ class YapeNotificationListenerService : NotificationListenerService() {
         
         // foreground service
         initializeForegroundService()
-        
-        // Empezar el heartbeat si el servicio está habilitado
-        if (isServiceEnabled()) {
-            startHeartbeat()
-        }
     }
     
     override fun onListenerDisconnected() {
         super.onListenerDisconnected()
         Log.w(TAG, " servicio de notificaciones DESCONECTADO - se intenta reconectar")
-        
-        // Detener Heartbeat e informar offline
-        stopHeartbeatAndSendOffline()
         
         // Desregistrar el receiver para evitar memory leaks
         try {
@@ -308,41 +338,9 @@ class YapeNotificationListenerService : NotificationListenerService() {
         if (show) {
             startForegroundService()
             acquireWakeLock()
-            startHeartbeat()
         } else {
             stopForegroundService()
             releaseWakeLock()
-            stopHeartbeatAndSendOffline()
-        }
-    }
-    
-    /**
-     * Inicia un ciclo que envía un "pulso" a Firebase cada 5 minutos.
-     * También renueva el wakeLock en cada ciclo para que no expire (timeout: 10min).
-     */
-    private fun startHeartbeat() {
-        if (heartbeatJob?.isActive == true) return
-        
-        heartbeatJob = serviceScope.launch {
-            while (true) {
-                Log.d(TAG, "💓 Enviando pulso de vida (Heartbeat) a Firebase (cada 5 minutos)...")
-                // Renovar wakeLock en cada ciclo (nuestro timeout es 10min, el ciclo es 5min)
-                acquireWakeLock()
-                firebaseUploader.sendHeartbeat(isOnline = true)
-                delay(300_000) // Esperar 5 minutos (300,000 ms)
-            }
-        }
-    }
-    
-    /**
-     * Detiene el Heartbeat e informa a Firebase que el servicio se cerró
-     */
-    private fun stopHeartbeatAndSendOffline() {
-        heartbeatJob?.cancel()
-        // Usar serviceScope para que esté correctamente supervisado
-        serviceScope.launch {
-            Log.d(TAG, "💔 Servicio detenido, avisando a Firebase (Offline)...")
-            firebaseUploader.sendHeartbeat(isOnline = false)
         }
     }
     
@@ -389,7 +387,6 @@ class YapeNotificationListenerService : NotificationListenerService() {
             // Ya estaba desregistrado (p. ej. si onListenerDisconnected lo hizo antes)
         }
         releaseWakeLock()
-        stopHeartbeatAndSendOffline()
         // Cancelar el scope del servicio: libera todos los coroutines activos
         serviceScope.cancel()
         Log.d(TAG, "🛑 Servicio destruido: recursos liberados")

@@ -50,6 +50,113 @@
         android:background="@drawable/divider_circuit"
         android:layout_marginBottom="24dp"/>
 
+    <!-- Selector de Modo con Tarjetas -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:baselineAligned="false"
+        android:layout_marginBottom="32dp">
+
+        <!-- Card POS -->
+        <com.google.android.material.card.MaterialCardView
+            android:id="@+id/cardModePos"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:layout_marginEnd="8dp"
+            android:clickable="true"
+            android:focusable="true"
+            app:cardCornerRadius="16dp"
+            app:cardElevation="4dp"
+            app:strokeWidth="2dp"
+            app:strokeColor="@color/kaja_teal">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:orientation="vertical"
+                android:padding="16dp"
+                android:gravity="center">
+
+                <ImageView
+                    android:id="@+id/ivIconPos"
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
+                    android:src="@android:drawable/ic_menu_agenda"
+                    app:tint="@color/kaja_teal"
+                    android:layout_marginBottom="12dp"/>
+
+                <TextView
+                    android:id="@+id/tvTitlePos"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="POS"
+                    android:textStyle="bold"
+                    android:textSize="18sp"
+                    android:textColor="@color/kaja_teal_dark"/>
+                    
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Django"
+                    android:textSize="12sp"
+                    android:gravity="center"
+                    android:textColor="@color/kaja_teal"/>
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <!-- Card Tesis -->
+        <com.google.android.material.card.MaterialCardView
+            android:id="@+id/cardModeTesis"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:layout_marginStart="8dp"
+            android:clickable="true"
+            android:focusable="true"
+            app:cardCornerRadius="16dp"
+            app:cardElevation="0dp"
+            app:cardBackgroundColor="@color/kaja_bg_light"
+            app:strokeWidth="1dp"
+            app:strokeColor="#E0E0E0">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:orientation="vertical"
+                android:padding="16dp"
+                android:gravity="center">
+
+                <ImageView
+                    android:id="@+id/ivIconTesis"
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
+                    android:src="@android:drawable/ic_menu_sort_by_size"
+                    app:tint="#9E9E9E"
+                    android:layout_marginBottom="12dp"/>
+
+                <TextView
+                    android:id="@+id/tvTitleTesis"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Tesis"
+                    android:textStyle="bold"
+                    android:textSize="18sp"
+                    android:textColor="#9E9E9E"/>
+                    
+                <TextView
+                    android:id="@+id/tvSubTesis"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Supabase"
+                    android:textSize="12sp"
+                    android:gravity="center"
+                    android:textColor="#9E9E9E"/>
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+    </LinearLayout>
+
     <!-- Botón de Google Sign-In con gradiente diagonal (idea #6) -->
     <androidx.appcompat.widget.AppCompatButton
         android:id="@+id/btnGoogleSignIn"

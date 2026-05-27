@@ -72,7 +72,13 @@
             android:fillViewport="true"
             android:visibility="visible">
 
+            <FrameLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content">
+            
+            <!-- MODO POS (DJANGO) -->
             <LinearLayout
+                android:id="@+id/layoutModePos"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
@@ -129,6 +135,52 @@
                     android:layout_height="12dp"
                     android:background="@drawable/divider_circuit"
                     android:layout_marginBottom="20dp"/>
+
+                <!-- ÚLTIMAS TRANSACCIONES DESDE EL SERVIDOR -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:layout_marginBottom="24dp">
+
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="ÚLTIMAS TRANSACCIONES"
+                        android:textSize="12sp"
+                        android:textStyle="bold"
+                        android:textColor="@color/kaja_teal_dark"
+                        android:letterSpacing="0.1"
+                        android:layout_marginBottom="12dp"/>
+
+                    <ProgressBar
+                        android:id="@+id/pbTransactions"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_gravity="center"
+                        android:visibility="gone"/>
+
+                    <LinearLayout
+                        android:id="@+id/llTransactionsList"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:background="@drawable/bg_dark_card"
+                        android:padding="12dp"
+                        android:elevation="2dp">
+                        
+                        <TextView
+                            android:id="@+id/tvEmptyTransactions"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:text="No hay transacciones recientes"
+                            android:textSize="14sp"
+                            android:gravity="center"
+                            android:textColor="@color/kaja_teal"
+                            android:padding="16dp"/>
+                            
+                    </LinearLayout>
+                </LinearLayout>
 
                 <TextView
                     android:layout_width="match_parent"
@@ -408,6 +460,401 @@
                 </LinearLayout>
 
             </LinearLayout>
+
+            <!-- MODO TESIS (SUPABASE / MINI-POS) -->
+            <LinearLayout
+                android:id="@+id/layoutModeTesis"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="24dp"
+                android:clipToPadding="false"
+                android:visibility="gone">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="20dp"
+                    android:background="@drawable/bg_dark_card"
+                    android:orientation="vertical"
+                    android:padding="20dp">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="NEGOCIO EN DEMO"
+                        android:textColor="@color/kaja_blue_pale"
+                        android:textSize="10sp"
+                        android:textStyle="bold"
+                        android:letterSpacing="0.15" />
+
+                    <TextView
+                        android:id="@+id/tvTesisBusinessName"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="10dp"
+                        android:text="Bodega Santa Rosa"
+                        android:textColor="@color/white"
+                        android:textSize="22sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:id="@+id/tvTesisOwnerWallet"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="6dp"
+                        android:text="Yape del dueno: 987 654 321"
+                        android:textColor="@color/kaja_blue_pastel"
+                        android:textSize="13sp" />
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="16dp"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal">
+
+                        <TextView
+                            android:id="@+id/tvTesisPendingCount"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="0 por revisar"
+                            android:textColor="@color/kaja_gold"
+                            android:textSize="12sp"
+                            android:textStyle="bold" />
+
+                        <TextView
+                            android:id="@+id/tvTesisObservedCount"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="0 observados"
+                            android:textColor="@color/kaja_coral"
+                            android:textSize="12sp"
+                            android:textStyle="bold" />
+                    </LinearLayout>
+                </LinearLayout>
+
+                <!-- HERO TEXT & COUNTER (TESIS) -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:background="@drawable/bg_hero_polygon"
+                    android:orientation="vertical"
+                    android:padding="32dp"
+                    android:gravity="center"
+                    android:elevation="8dp"
+                    android:layout_marginBottom="24dp">
+
+                    <TextView
+                        android:id="@+id/tvTesisTransactionSum"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="S/ 0.00"
+                        android:textSize="50sp"
+                        android:textStyle="bold"
+                        android:textColor="#FFFFFF" />
+
+                    <TextView
+                        android:id="@+id/tvTesisTransactionCount"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="0 YAPEOS HOY"
+                        android:textSize="12sp"
+                        android:textStyle="bold"
+                        android:textColor="@color/kaja_gold"
+                        android:letterSpacing="0.15"
+                        android:layout_marginTop="4dp" />
+                        
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="MODO MICROEMPRESA"
+                        android:textSize="10sp"
+                        android:textColor="@color/white"
+                        android:alpha="0.7"
+                        android:layout_marginTop="16dp" />
+
+                    <TextView
+                        android:id="@+id/tvTesisLastPayment"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp"
+                        android:text="Ultimo pago 00:00"
+                        android:textColor="@color/white"
+                        android:textSize="12sp"
+                        android:alpha="0.85" />
+                </LinearLayout>
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="RESUMEN POR PUESTO"
+                    android:textSize="12sp"
+                    android:textStyle="bold"
+                    android:textColor="@color/kaja_teal_dark"
+                    android:letterSpacing="0.1"
+                    android:layout_marginBottom="12dp"/>
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="24dp"
+                    android:baselineAligned="false"
+                    android:orientation="horizontal">
+
+                    <com.google.android.material.card.MaterialCardView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:layout_marginEnd="6dp"
+                        app:cardBackgroundColor="@color/white"
+                        app:cardCornerRadius="14dp"
+                        app:cardElevation="1dp">
+
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="vertical"
+                            android:padding="14dp">
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Puesto 1"
+                                android:textColor="@color/kaja_teal"
+                                android:textSize="11sp"
+                                android:textStyle="bold" />
+
+                            <TextView
+                                android:id="@+id/tvTesisPuesto1Total"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="8dp"
+                                android:text="S/ 0.00"
+                                android:textColor="@color/kaja_teal_dark"
+                                android:textSize="16sp"
+                                android:textStyle="bold" />
+                        </LinearLayout>
+                    </com.google.android.material.card.MaterialCardView>
+
+                    <com.google.android.material.card.MaterialCardView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:layout_marginStart="3dp"
+                        android:layout_marginEnd="3dp"
+                        app:cardBackgroundColor="@color/white"
+                        app:cardCornerRadius="14dp"
+                        app:cardElevation="1dp">
+
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="vertical"
+                            android:padding="14dp">
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Puesto 2"
+                                android:textColor="@color/kaja_teal"
+                                android:textSize="11sp"
+                                android:textStyle="bold" />
+
+                            <TextView
+                                android:id="@+id/tvTesisPuesto2Total"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="8dp"
+                                android:text="S/ 0.00"
+                                android:textColor="@color/kaja_teal_dark"
+                                android:textSize="16sp"
+                                android:textStyle="bold" />
+                        </LinearLayout>
+                    </com.google.android.material.card.MaterialCardView>
+
+                    <com.google.android.material.card.MaterialCardView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:layout_marginStart="6dp"
+                        app:cardBackgroundColor="@color/white"
+                        app:cardCornerRadius="14dp"
+                        app:cardElevation="1dp">
+
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="vertical"
+                            android:padding="14dp">
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Puesto 3"
+                                android:textColor="@color/kaja_teal"
+                                android:textSize="11sp"
+                                android:textStyle="bold" />
+
+                            <TextView
+                                android:id="@+id/tvTesisPuesto3Total"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="8dp"
+                                android:text="S/ 0.00"
+                                android:textColor="@color/kaja_teal_dark"
+                                android:textSize="16sp"
+                                android:textStyle="bold" />
+                        </LinearLayout>
+                    </com.google.android.material.card.MaterialCardView>
+                </LinearLayout>
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="ACCIONES QUE PODRIA TENER EL AYUDANTE"
+                    android:textSize="12sp"
+                    android:textStyle="bold"
+                    android:textColor="@color/kaja_teal_dark"
+                    android:letterSpacing="0.1"
+                    android:layout_marginBottom="12dp"/>
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="24dp"
+                    android:orientation="vertical">
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnTesisAddDescription"
+                        style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                        android:layout_width="match_parent"
+                        android:layout_height="48dp"
+                        android:text="Agregar descripcion a una venta"
+                        android:textColor="@color/kaja_teal_dark"
+                        app:strokeColor="@color/kaja_teal_dark" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnTesisConfirmPayment"
+                        style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                        android:layout_width="match_parent"
+                        android:layout_height="48dp"
+                        android:layout_marginTop="10dp"
+                        android:text="Marcar pago como confirmado"
+                        android:textColor="@color/kaja_teal_dark"
+                        app:strokeColor="@color/kaja_teal_dark" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnTesisViewAlerts"
+                        style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                        android:layout_width="match_parent"
+                        android:layout_height="48dp"
+                        android:layout_marginTop="10dp"
+                        android:text="Ver pagos observados"
+                        android:textColor="@color/kaja_coral"
+                        app:strokeColor="@color/kaja_coral" />
+                </LinearLayout>
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="NAVEGACION DEL MODO TESIS"
+                    android:textSize="12sp"
+                    android:textStyle="bold"
+                    android:textColor="@color/kaja_teal_dark"
+                    android:letterSpacing="0.1"
+                    android:layout_marginBottom="12dp"/>
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="24dp"
+                    android:orientation="vertical">
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnTesisOpenShift"
+                        android:layout_width="match_parent"
+                        android:layout_height="50dp"
+                        android:text="Mi jornada y elegir puesto"
+                        android:textColor="@color/white"
+                        android:backgroundTint="@color/kaja_teal_dark" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnTesisOpenQueue"
+                        android:layout_width="match_parent"
+                        android:layout_height="50dp"
+                        android:layout_marginTop="10dp"
+                        android:text="Bandeja del ayudante"
+                        android:textColor="@color/white"
+                        android:backgroundTint="@color/kaja_teal" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnTesisOpenOwner"
+                        android:layout_width="match_parent"
+                        android:layout_height="50dp"
+                        android:layout_marginTop="10dp"
+                        android:text="Panel del dueno"
+                        android:textColor="@color/white"
+                        android:backgroundTint="@color/kaja_coral" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnTesisOpenTeam"
+                        style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                        android:layout_width="match_parent"
+                        android:layout_height="48dp"
+                        android:layout_marginTop="10dp"
+                        android:text="Equipo e invitaciones"
+                        android:textColor="@color/kaja_teal_dark"
+                        app:strokeColor="@color/kaja_teal_dark" />
+                </LinearLayout>
+
+                <!-- BOTON COMPARTIR REPORTE -->
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnShareReport"
+                    android:layout_width="match_parent"
+                    android:layout_height="56dp"
+                    android:text="COMPARTIR REPORTE POR WHATSAPP"
+                    android:textSize="13sp"
+                    android:textStyle="bold"
+                    android:textColor="@color/white"
+                    app:icon="@android:drawable/ic_menu_share"
+                    app:iconTint="@color/white"
+                    app:cornerRadius="12dp"
+                    android:backgroundTint="@color/kaja_teal_dark"
+                    android:layout_marginBottom="24dp"/>
+
+                <!-- LISTA DE TRANSACCIONES -->
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="ACTIVIDAD RECIENTE"
+                    android:textSize="12sp"
+                    android:textStyle="bold"
+                    android:textColor="@color/kaja_teal_dark"
+                    android:letterSpacing="0.1"
+                    android:layout_marginBottom="12dp"/>
+                    
+                <TextView
+                    android:id="@+id/tvTesisEmptyState"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="No has recibido pagos hoy."
+                    android:gravity="center"
+                    android:padding="24dp"
+                    android:textColor="@color/kaja_teal"
+                    android:visibility="gone"/>
+
+                <androidx.recyclerview.widget.RecyclerView
+                    android:id="@+id/rvTesisTransactions"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:nestedScrollingEnabled="false"
+                    android:clipToPadding="false"
+                    android:paddingBottom="24dp"/>
+
+            </LinearLayout>
+            </FrameLayout>
         </ScrollView>
 
         <!-- CONTENEDOR 2: UPDATES -->
