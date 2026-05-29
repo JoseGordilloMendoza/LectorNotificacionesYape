@@ -9,5 +9,5 @@ data class NotificationPayload(
     val sender_name: String,
     val reference_code: String,
     val wallet_type: String,
-    val raw_payload: String
+    val raw_payload: Map<String, Any>
 )

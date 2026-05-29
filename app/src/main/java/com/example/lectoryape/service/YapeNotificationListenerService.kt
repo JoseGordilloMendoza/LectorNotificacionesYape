@@ -11,25 +11,18 @@ import android.os.PowerManager
 import android.service.notification.NotificationListenerService
 import android.service.notification.StatusBarNotification
 import android.util.Log
-import androidx.annotation.RequiresApi
 import com.example.lectoryape.auth.SupabaseAuthManager
-import com.example.lectoryape.LoginActivity.Companion.MODE_POS
-import com.example.lectoryape.LoginActivity.Companion.MODE_TESIS
-import com.example.lectoryape.LoginActivity.Companion.PREF_APP_MODE
 import com.example.lectoryape.network.RetrofitClient
 import com.example.lectoryape.network.models.NotificationPayload
-import com.example.lectoryape.auth.SupabaseManager
-import io.github.jan.supabase.postgrest.postgrest
 import com.example.lectoryape.models.YapeNotificationRaw
 import com.example.lectoryape.storage.YapeNotificationStorage
 import com.example.lectoryape.utils.NotificationHelper
 import com.example.lectoryape.utils.YapeParser
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
-import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 
 class YapeNotificationListenerService : NotificationListenerService() {
@@ -46,12 +39,10 @@ class YapeNotificationListenerService : NotificationListenerService() {
         applicationContext.getSharedPreferences("yape_listener_prefs", Context.MODE_PRIVATE)
     }
 
-    private val modePrefs: SharedPreferences by lazy {
-        applicationContext.getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
-    }
-    
     // Wake lock para mantener el servicio activo
     private var wakeLock: PowerManager.WakeLock? = null
+    
+    private var heartbeatJob: kotlinx.coroutines.Job? = null
     
     // Scope con lifecycle: se cancela en onDestroy para evitar memory leaks
     private val serviceScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
@@ -171,47 +162,38 @@ class YapeNotificationListenerService : NotificationListenerService() {
             // csv
             val saved = storage.saveNotification(yapePlinPayment)
             if (saved) {
-                sendBroadcast(Intent(ACTION_NOTIFICATION_SAVED))
+                val intent = Intent(ACTION_NOTIFICATION_SAVED)
+                intent.setPackage(packageName)
+                sendBroadcast(intent)
             }
 
-            // Subir según el modo
+            // Subir al backend Django
             serviceScope.launch {
                 try {
-                    val appMode = modePrefs.getString(PREF_APP_MODE, MODE_POS)
-                    if (appMode == MODE_POS) {
-                        // Enviar a Django
-                        val tenantId = applicationContext.getSharedPreferences("app_prefs", Context.MODE_PRIVATE).getString("tenant_id", "")
-                        val rawJson = sbn.notification.extras.getString("android.text") ?: ""
-                        if (!tenantId.isNullOrEmpty()) {
-                            val payload = NotificationPayload(
-                                tenant = tenantId,
-                                branch = null,
-                                amount = yapePlinPayment.amount,
-                                sender_name = yapePlinPayment.name,
-                                reference_code = yapePlinPayment.securityCode,
-                                wallet_type = yapePlinPayment.walletType,
-                                raw_payload = rawJson
-                            )
-                            val response = RetrofitClient.api.sendNotification(payload)
-                            if (!response.isSuccessful) {
-                                Log.e(TAG, "Error Django: ${response.code()}")
-                            }
-                        }
+                    val tenantId = applicationContext.getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
+                        .getString("tenant_id", "")
+                    if (tenantId.isNullOrEmpty() || tenantId == "null") {
+                        Log.w(TAG, "⚠️ tenantId no configurado o es 'null' — pago no enviado al backend")
+                        return@launch
+                    }
+                    val rawJson = sbn.notification.extras.getString("android.text") ?: ""
+                    val payload = NotificationPayload(
+                        tenant = tenantId,
+                        branch = null,
+                        amount = yapePlinPayment.amount,
+                        sender_name = yapePlinPayment.name,
+                        reference_code = yapePlinPayment.securityCode,
+                        wallet_type = yapePlinPayment.walletType,
+                        raw_payload = mapOf("text" to rawJson)
+                    )
+                    val response = RetrofitClient.api.sendNotification(payload)
+                    if (response.isSuccessful) {
+                        Log.i(TAG, "✅ Enviado al backend: ${yapePlinPayment.name} S/${"%.2f".format(yapePlinPayment.amount)}")
                     } else {
-                        // Enviar a Supabase
-                        val currentUser = SupabaseManager.auth.currentUserOrNull()
-                        if (currentUser != null) {
-                            val transaction = com.example.lectoryape.models.TransactionModel(
-                                owner_id = currentUser.id,
-                                monto = yapePlinPayment.amount,
-                                nombre_remitente = yapePlinPayment.name,
-                                codigo_referencia = yapePlinPayment.securityCode
-                            )
-                            SupabaseManager.client.postgrest.from("transactions").insert(transaction)
-                        }
+                        Log.e(TAG, "❌ Error backend ${response.code()}: ${response.errorBody()?.string()}")
                     }
                 } catch (e: Exception) {
-                    Log.e(TAG, "Error subiendo notificación: ${e.message}")
+                    Log.e(TAG, "❌ Sin conexión al backend: ${e.message}")
                 }
             }
         } catch (e: Exception) {
@@ -318,6 +300,7 @@ class YapeNotificationListenerService : NotificationListenerService() {
         val notification = notificationHelper.buildServiceNotification()
         startForeground(NotificationHelper.NOTIFICATION_ID, notification)
         Log.d(TAG, "foreground serv iniciado")
+        startHeartbeat()
     }
     
     // se detiene el servicio
@@ -328,6 +311,7 @@ class YapeNotificationListenerService : NotificationListenerService() {
             @Suppress("DEPRECATION")
             stopForeground(true)
         }
+        stopHeartbeat()
         Log.d(TAG, "foreground service detenido")
     }
     
@@ -342,6 +326,43 @@ class YapeNotificationListenerService : NotificationListenerService() {
             stopForegroundService()
             releaseWakeLock()
         }
+    }
+    
+    private fun startHeartbeat() {
+        if (heartbeatJob?.isActive == true) return
+        heartbeatJob = serviceScope.launch {
+            while (isActive) {
+                try {
+                    val tenantId = applicationContext.getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
+                        .getString("tenant_id", "")
+                    val deviceId = applicationContext.getSharedPreferences("yape_listener_prefs", Context.MODE_PRIVATE)
+                        .getString("device_id", "")
+                    
+                    if (!tenantId.isNullOrEmpty() && tenantId != "null" && !deviceId.isNullOrEmpty()) {
+                        val payload = com.example.lectoryape.network.models.HeartbeatPayload(
+                            tenantId = tenantId,
+                            deviceId = deviceId,
+                            timestamp = System.currentTimeMillis()
+                        )
+                        RetrofitClient.api.sendHeartbeat(payload)
+                        Log.d(TAG, "💓 Heartbeat enviado al backend para el device_id: $deviceId")
+                    }
+                    
+                    // Renovar wake lock periódicamente para mantener el CPU vivo
+                    acquireWakeLock()
+                } catch (e: Exception) {
+                    Log.e(TAG, "❌ Error al enviar heartbeat: ${e.message}")
+                }
+                // Esperar 5 minutos
+                kotlinx.coroutines.delay(5 * 60 * 1000L)
+            }
+        }
+    }
+
+    private fun stopHeartbeat() {
+        heartbeatJob?.cancel()
+        heartbeatJob = null
+        Log.d(TAG, "💓 Heartbeat detenido")
     }
     
     // wake lock para mantener el CPU activo

@@ -160,15 +160,20 @@
                         android:layout_gravity="center"
                         android:visibility="gone"/>
 
-                    <LinearLayout
-                        android:id="@+id/llTransactionsList"
+                    <FrameLayout
                         android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:orientation="vertical"
-                        android:background="@drawable/bg_dark_card"
-                        android:padding="12dp"
-                        android:elevation="2dp">
+                        android:layout_height="wrap_content">
                         
+                        <androidx.recyclerview.widget.RecyclerView
+                            android:id="@+id/rvTransactions"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:background="@drawable/bg_dark_card"
+                            android:padding="12dp"
+                            android:elevation="2dp"
+                            android:clipToPadding="false"
+                            app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager" />
+                            
                         <TextView
                             android:id="@+id/tvEmptyTransactions"
                             android:layout_width="match_parent"
@@ -177,9 +182,10 @@
                             android:textSize="14sp"
                             android:gravity="center"
                             android:textColor="@color/kaja_teal"
-                            android:padding="16dp"/>
-                            
-                    </LinearLayout>
+                            android:background="@drawable/bg_dark_card"
+                            android:padding="24dp"
+                            android:elevation="2dp"/>
+                    </FrameLayout>
                 </LinearLayout>
 
                 <TextView
@@ -283,6 +289,17 @@
                     </LinearLayout>
 
                 </LinearLayout>
+
+                <!-- DEVELOPER SIMULATION BUTTON -->
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnSimulateYape"
+                    style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                    android:layout_width="match_parent"
+                    android:layout_height="48dp"
+                    android:text="[DEV] Simular Pago Yape"
+                    android:textColor="@color/kaja_teal_dark"
+                    app:strokeColor="@color/kaja_teal_dark"
+                    android:layout_marginBottom="24dp" />
 
                 <!-- ENABLE PERMISSION BUTTON (idea #6: gradiente diagonal) -->
                 <androidx.appcompat.widget.AppCompatButton

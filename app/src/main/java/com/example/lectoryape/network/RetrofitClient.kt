@@ -17,13 +17,18 @@ object RetrofitClient {
     }
 
     private val authInterceptor = Interceptor { chain ->
-        val requestBuilder = chain.request().newBuilder()
-        // Obtener el token de Supabase (JWT) para enviarlo a Django
-        val token = SupabaseManager.auth.currentSessionOrNull()?.accessToken
-        if (token != null) {
-            requestBuilder.addHeader("Authorization", "Bearer $token")
+        val request = chain.request()
+        // Si el llamador ya puso el header (p.ej. bootstrap en login), no duplicar
+        if (request.header("Authorization") != null) {
+            return@Interceptor chain.proceed(request)
         }
-        chain.proceed(requestBuilder.build())
+        val token = SupabaseManager.auth.currentSessionOrNull()?.accessToken
+        val newRequest = if (token != null) {
+            request.newBuilder().addHeader("Authorization", "Bearer $token").build()
+        } else {
+            request
+        }
+        chain.proceed(newRequest)
     }
 
     private val okHttpClient = OkHttpClient.Builder()

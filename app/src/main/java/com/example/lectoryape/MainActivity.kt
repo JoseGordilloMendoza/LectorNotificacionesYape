@@ -22,15 +22,9 @@ import androidx.core.view.isVisible
 import androidx.lifecycle.lifecycleScope
 
 import com.example.lectoryape.auth.SupabaseAuthManager
-import com.example.lectoryape.adapters.TesisTransactionAdapter
 import com.example.lectoryape.databinding.ActivityMainBinding
-import com.example.lectoryape.repository.FakeTesisRepository
 import com.example.lectoryape.service.YapeNotificationListenerService
 import com.example.lectoryape.storage.YapeNotificationStorage
-import com.example.lectoryape.tesis.TesisOwnerActivity
-import com.example.lectoryape.tesis.TesisQueueActivity
-import com.example.lectoryape.tesis.TesisShiftActivity
-import com.example.lectoryape.tesis.TesisTeamActivity
 import java.io.File
 import java.util.Locale
 import kotlinx.coroutines.Dispatchers
@@ -47,7 +41,6 @@ class MainActivity : AppCompatActivity() {
     private lateinit var supabaseAuthManager: SupabaseAuthManager
     private lateinit var appUpdater: com.example.lectoryape.utils.AppUpdater
     private lateinit var transactionAdapter: com.example.lectoryape.adapters.TransactionAdapter
-    private lateinit var tesisTransactionAdapter: TesisTransactionAdapter
     
     // SharedPreferences para guardar la preferencia del switch
     private val prefs by lazy {
@@ -108,30 +101,14 @@ class MainActivity : AppCompatActivity() {
 
         // Configurar RecyclerView
         transactionAdapter = com.example.lectoryape.adapters.TransactionAdapter()
-        tesisTransactionAdapter = TesisTransactionAdapter()
-        val rvTesis = findViewById<androidx.recyclerview.widget.RecyclerView>(R.id.rvTesisTransactions)
-        rvTesis?.layoutManager = androidx.recyclerview.widget.LinearLayoutManager(this)
-        rvTesis?.adapter = tesisTransactionAdapter
+        val rvTransactions = findViewById<androidx.recyclerview.widget.RecyclerView>(R.id.rvTransactions)
+        rvTransactions?.adapter = transactionAdapter
 
-        // Verificar el modo actual
-        val mode = modePrefs.getString(com.example.lectoryape.LoginActivity.PREF_APP_MODE, com.example.lectoryape.LoginActivity.MODE_POS)
         val layoutModePos = findViewById<android.widget.LinearLayout>(R.id.layoutModePos)
         val layoutModeTesis = findViewById<android.widget.LinearLayout>(R.id.layoutModeTesis)
 
-        if (mode == com.example.lectoryape.LoginActivity.MODE_TESIS) {
-            layoutModePos?.visibility = android.view.View.GONE
-            layoutModeTesis?.visibility = android.view.View.VISIBLE
-
-            setupTesisMockUI()
-
-            // Botón Compartir
-            findViewById<android.view.View>(R.id.btnShareReport)?.setOnClickListener {
-                shareDailyReport()
-            }
-        } else {
-            layoutModePos?.visibility = android.view.View.VISIBLE
-            layoutModeTesis?.visibility = android.view.View.GONE
-        }
+        layoutModePos?.visibility = android.view.View.VISIBLE
+        layoutModeTesis?.visibility = android.view.View.GONE
 
         checkNotificationPermission()
         updateNotificationCount()
@@ -147,42 +124,48 @@ class MainActivity : AppCompatActivity() {
 
         // Verificar si hay una actualización OTA disponible (silencioso, no bloquea la UI)
         appUpdater.checkForUpdates()
+        
+        setupDeviceRegistration()
+    }
+    
+    private fun setupDeviceRegistration() {
+        val deviceId = prefs.getString("device_id", "")
+        if (deviceId.isNullOrEmpty()) {
+            val newId = java.util.UUID.randomUUID().toString()
+            prefs.edit().putString("device_id", newId).apply()
+        }
+
+        val isRegistered = prefs.getBoolean("is_device_registered", false)
+        if (!isRegistered) {
+            lifecycleScope.launch(Dispatchers.IO) {
+                val tenantId = modePrefs.getString("tenant_id", "")
+                if (!tenantId.isNullOrEmpty() && tenantId != "null") {
+                    val deviceName = Build.MODEL
+                    val currentDeviceId = prefs.getString("device_id", "") ?: ""
+                    val req = com.example.lectoryape.network.models.DeviceRegistrationRequest(
+                        tenant = tenantId,
+                        deviceId = currentDeviceId,
+                        name = deviceName
+                    )
+                    try {
+                        val response = com.example.lectoryape.network.RetrofitClient.api.registerDevice(req)
+                        // If 200/201 or if it's 400 (already exists), we mark it as registered to stop spamming
+                        if (response.isSuccessful || response.code() == 400) {
+                            prefs.edit().putBoolean("is_device_registered", true).apply()
+                            android.util.Log.d("MainActivity", "✅ Device registered (or already existed) in backend")
+                        } else {
+                            android.util.Log.e("MainActivity", "❌ Failed to register device: ${response.code()} ${response.errorBody()?.string()}")
+                        }
+                    } catch (e: Exception) {
+                        android.util.Log.e("MainActivity", "Error registering device: ${e.message}")
+                    }
+                }
+            }
+        }
     }
 
     private fun shareDailyReport() {
         lifecycleScope.launch(Dispatchers.IO) {
-            val mode = modePrefs.getString(
-                com.example.lectoryape.LoginActivity.PREF_APP_MODE,
-                com.example.lectoryape.LoginActivity.MODE_POS
-            )
-
-            if (mode == com.example.lectoryape.LoginActivity.MODE_TESIS) {
-                val transactions = FakeTesisRepository.getTransactions()
-                val count = FakeTesisRepository.getTotalCount()
-                val sum = FakeTesisRepository.getTotalAmount()
-                val report = buildString {
-                    appendLine("Reporte de Caja (Modo Tesis Demo)")
-                    val sdf = java.text.SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
-                    appendLine("Fecha: ${sdf.format(java.util.Date())}")
-                    appendLine("Negocio: ${FakeTesisRepository.getBusinessName()}")
-                    appendLine("Total recaudado: S/ ${"%.2f".format(sum)}")
-                    appendLine("Cantidad: $count operaciones")
-                    appendLine()
-                    appendLine("Detalle:")
-                    transactions.forEach {
-                        val description = it.description ?: "Sin descripcion"
-                        appendLine("- ${it.puesto} - ${it.senderName} - S/ ${"%.2f".format(it.amount)} - ${it.status} - $description")
-                    }
-                    appendLine()
-                    appendLine("Demo visual de KAJA Tesis")
-                }
-
-                withContext(Dispatchers.Main) {
-                    shareTextReport(report)
-                }
-                return@launch
-            }
-
             val (count, sum, transactions) = loadLocalTransactions()
             if (count == 0) {
                 withContext(Dispatchers.Main) {
@@ -334,10 +317,65 @@ class MainActivity : AppCompatActivity() {
         val tvRole         = findViewById<android.widget.TextView>(R.id.tvProfileRole)
         val btnLogout      = findViewById<com.google.android.material.button.MaterialButton>(R.id.btnProfileLogout)
 
-        tvName.text  = "Usuario"
-        tvEmail.text = "—"
-        tvStatus.text = "Modo Híbrido"
-        tvRole.text = "Activo"
+        val tenantName = modePrefs.getString("tenant_name", "Negocio")
+        val userName = modePrefs.getString("user_name", "Usuario")
+        tvName.text  = "$userName - $tenantName"
+        tvEmail.text = modePrefs.getString("user_email", "—")
+        
+        val photoUrl = modePrefs.getString("user_photo_url", "")
+        if (!photoUrl.isNullOrEmpty()) {
+            ivPhoto.load(photoUrl) {
+                transformations(CircleCropTransformation())
+            }
+        }
+        
+        val role = modePrefs.getString("user_role", "MEMBER")
+        val roleText = when (role) {
+            "OWNER" -> "Dueño"
+            "ADMIN" -> "Administrador"
+            else -> "Miembro"
+        }
+        tvRole.text = roleText
+        
+        // Cargar estadísticas y suscripción
+        lifecycleScope.launch {
+            try {
+                val (count, sum, _) = withContext(Dispatchers.IO) { loadLocalTransactions() }
+                val tvStatTotal = findViewById<android.widget.TextView>(R.id.tvStatTotal)
+                val tvStatToday = findViewById<android.widget.TextView>(R.id.tvStatToday)
+                
+                tvStatTotal?.text = storage.getNotificationCount().toString()
+                tvStatToday?.text = "S/ %.2f".format(java.util.Locale.getDefault(), sum)
+            } catch (e: Exception) {}
+
+            try {
+                val response = com.example.lectoryape.network.RetrofitClient.api.getCurrentSubscription()
+                if (response.isSuccessful) {
+                    val sub = response.body()
+                    if (sub != null) {
+                        tvStatus.text = (sub.planName ?: sub.planType).uppercase()
+                        
+                        val tvCreatedAt = findViewById<android.widget.TextView>(R.id.tvProfileCreatedAt)
+                        val tvTrialEnd = findViewById<android.widget.TextView>(R.id.tvProfileTrialEnd)
+                        
+                        val parser = java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", java.util.Locale.getDefault())
+                        val formatter = java.text.SimpleDateFormat("dd MMM yyyy", java.util.Locale.getDefault())
+                        
+                        try {
+                            val sd = parser.parse(sub.startDate.substringBefore("."))
+                            tvCreatedAt?.text = formatter.format(sd!!)
+                        } catch (e: Exception) { tvCreatedAt?.text = sub.startDate.substringBefore("T") }
+                        
+                        try {
+                            val ed = parser.parse(sub.endDate.substringBefore("."))
+                            tvTrialEnd?.text = formatter.format(ed!!)
+                        } catch (e: Exception) { tvTrialEnd?.text = sub.endDate.substringBefore("T") }
+                    }
+                }
+            } catch (e: Exception) {
+                android.util.Log.e("MainActivity", "Error obteniendo suscripción: ${e.message}")
+            }
+        }
 
         // Botón Cerrar Sesión
         btnLogout.setOnClickListener {
@@ -423,6 +461,72 @@ class MainActivity : AppCompatActivity() {
 
         // Botón para abrir el portal web
         binding.btnOpenWeb.setOnClickListener { openWebPortal() }
+        // Botón de simulación DEV (Oculto en Producción)
+        val btnSimulate = findViewById<android.view.View>(R.id.btnSimulateYape)
+        if (com.example.lectoryape.BuildConfig.DEBUG) {
+            btnSimulate?.isVisible = true
+            btnSimulate?.setOnClickListener {
+                simulateYapePayment()
+            }
+        } else {
+            btnSimulate?.isVisible = false
+        }
+    }
+    
+    private fun simulateYapePayment() {
+        val prefs = getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
+        val tenantId = prefs.getString("tenant_id", "")
+        if (tenantId.isNullOrEmpty() || tenantId == "null") {
+            Toast.makeText(this, "Tenant ID no configurado o inválido. Loguéate de nuevo.", Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        val dummyPayment = com.example.lectoryape.models.YapeNotificationRaw(
+            title = "Yape",
+            name = "Prueba Dev ${(100..999).random()}",
+            amount = (1..50).random().toDouble() + 0.50,
+            timestamp = System.currentTimeMillis(),
+            securityCode = (100000..999999).random().toString(),
+            notificationId = (1..1000).random(),
+            walletType = "YAPE"
+        )
+
+        // 1. Guardar localmente
+        val saved = storage.saveNotification(dummyPayment)
+        if (saved) {
+            val intent = Intent(YapeNotificationListenerService.ACTION_NOTIFICATION_SAVED)
+            intent.setPackage(packageName)
+            sendBroadcast(intent)
+        }
+
+        // 2. Enviar a Django
+        lifecycleScope.launch(Dispatchers.IO) {
+            try {
+                val payload = com.example.lectoryape.network.models.NotificationPayload(
+                    tenant = tenantId,
+                    branch = null,
+                    amount = dummyPayment.amount,
+                    sender_name = dummyPayment.name,
+                    reference_code = dummyPayment.securityCode,
+                    wallet_type = dummyPayment.walletType,
+                    raw_payload = mapOf("simulated" to true, "msg" to "Pago generado desde boton DEV")
+                )
+                val response = com.example.lectoryape.network.RetrofitClient.api.sendNotification(payload)
+                withContext(Dispatchers.Main) {
+                    if (response.isSuccessful) {
+                        Toast.makeText(this@MainActivity, "✅ Pago simulado exitoso", Toast.LENGTH_SHORT).show()
+                    } else {
+                        val errorBody = response.errorBody()?.string() ?: "Error desconocido"
+                        android.util.Log.e("MainActivity", "❌ Error servidor ${response.code()}: $errorBody")
+                        Toast.makeText(this@MainActivity, "❌ Error: $errorBody", Toast.LENGTH_LONG).show()
+                    }
+                }
+            } catch (e: Exception) {
+                withContext(Dispatchers.Main) {
+                    Toast.makeText(this@MainActivity, "❌ Error de red: ${e.message}", Toast.LENGTH_SHORT).show()
+                }
+            }
+        }
     }
     
     /**
@@ -487,16 +591,6 @@ class MainActivity : AppCompatActivity() {
     private fun updateNotificationCount() {
         lifecycleScope.launch {
             try {
-                val mode = modePrefs.getString(
-                    com.example.lectoryape.LoginActivity.PREF_APP_MODE,
-                    com.example.lectoryape.LoginActivity.MODE_POS
-                )
-
-                if (mode == com.example.lectoryape.LoginActivity.MODE_TESIS) {
-                    updateTesisMockDashboard()
-                    return@launch
-                }
-
                 // Obtener conteo y sumatoria general 
                 // Para no hacer que la app se vuelva pesada pidiendo Firebase a cada rato, 
                 // contamos los valores usando el storage local que está siempre sincronizado
@@ -513,6 +607,23 @@ class MainActivity : AppCompatActivity() {
                 
                 // Conteo Histórico Global
                 totalCountTextView?.text = "Histórico Nube (Modo Activo)"
+                
+                // Actualizar la lista de transacciones offline-first
+                if (::transactionAdapter.isInitialized) {
+                    val sortedList = list.sortedByDescending { it.timestamp }
+                    transactionAdapter.setTransactions(sortedList)
+                    
+                    val rvTransactions = findViewById<androidx.recyclerview.widget.RecyclerView>(R.id.rvTransactions)
+                    val tvEmptyTransactions = findViewById<android.widget.TextView>(R.id.tvEmptyTransactions)
+                    
+                    if (sortedList.isEmpty()) {
+                        rvTransactions?.visibility = android.view.View.GONE
+                        tvEmptyTransactions?.visibility = android.view.View.VISIBLE
+                    } else {
+                        rvTransactions?.visibility = android.view.View.VISIBLE
+                        tvEmptyTransactions?.visibility = android.view.View.GONE
+                    }
+                }
 
                 android.util.Log.d(
                         "MainActivity",
@@ -524,77 +635,7 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun setupTesisMockUI() {
-        findViewById<android.widget.TextView>(R.id.tvTesisBusinessName)?.text =
-            FakeTesisRepository.getBusinessName()
-        findViewById<android.widget.TextView>(R.id.tvTesisOwnerWallet)?.text =
-            FakeTesisRepository.getOwnerWallet()
 
-        findViewById<com.google.android.material.button.MaterialButton>(R.id.btnTesisAddDescription)?.setOnClickListener {
-            Toast.makeText(this, "Demo: aqui el ayudante agregaria una descripcion de venta", Toast.LENGTH_SHORT).show()
-        }
-        findViewById<com.google.android.material.button.MaterialButton>(R.id.btnTesisConfirmPayment)?.setOnClickListener {
-            Toast.makeText(this, "Demo: aqui se marcaria un pago como confirmado", Toast.LENGTH_SHORT).show()
-        }
-        findViewById<com.google.android.material.button.MaterialButton>(R.id.btnTesisViewAlerts)?.setOnClickListener {
-            Toast.makeText(this, "Demo: aqui verias pagos observados o sin descripcion", Toast.LENGTH_SHORT).show()
-        }
-        findViewById<com.google.android.material.button.MaterialButton>(R.id.btnTesisOpenShift)?.setOnClickListener {
-            startActivity(Intent(this, TesisShiftActivity::class.java))
-        }
-        findViewById<com.google.android.material.button.MaterialButton>(R.id.btnTesisOpenQueue)?.setOnClickListener {
-            startActivity(Intent(this, TesisQueueActivity::class.java))
-        }
-        findViewById<com.google.android.material.button.MaterialButton>(R.id.btnTesisOpenOwner)?.setOnClickListener {
-            startActivity(Intent(this, TesisOwnerActivity::class.java))
-        }
-        findViewById<com.google.android.material.button.MaterialButton>(R.id.btnTesisOpenTeam)?.setOnClickListener {
-            startActivity(Intent(this, TesisTeamActivity::class.java))
-        }
-
-        updateTesisMockDashboard()
-    }
-
-    private fun updateTesisMockDashboard() {
-        val transactions = FakeTesisRepository.getTransactions()
-        val totalAmount = FakeTesisRepository.getTotalAmount()
-        val totalCount = FakeTesisRepository.getTotalCount()
-        val observedCount = FakeTesisRepository.getObservedCount()
-        val pendingCount = FakeTesisRepository.getPendingCount()
-        val totalsByPuesto = FakeTesisRepository.getTotalsByPuesto()
-
-        findViewById<android.widget.TextView>(R.id.tvTesisTransactionSum)?.text =
-            String.format(Locale.getDefault(), "S/ %.2f", totalAmount)
-        findViewById<android.widget.TextView>(R.id.tvTesisTransactionCount)?.text =
-            "$totalCount COBROS REGISTRADOS HOY"
-        findViewById<android.widget.TextView>(R.id.tvTesisLastPayment)?.text =
-            FakeTesisRepository.getLastPaymentLabel()
-        findViewById<android.widget.TextView>(R.id.tvTesisPendingCount)?.text =
-            "$pendingCount por revisar"
-        findViewById<android.widget.TextView>(R.id.tvTesisObservedCount)?.text =
-            "$observedCount observados"
-
-        val totals = listOf(
-            R.id.tvTesisPuesto1Total,
-            R.id.tvTesisPuesto2Total,
-            R.id.tvTesisPuesto3Total
-        )
-
-        totals.forEachIndexed { index, viewId ->
-            val value = totalsByPuesto.getOrNull(index)?.second ?: 0.0
-            findViewById<android.widget.TextView>(viewId)?.text =
-                String.format(Locale.getDefault(), "S/ %.2f", value)
-        }
-
-        if (transactions.isEmpty()) {
-            findViewById<android.view.View>(R.id.tvTesisEmptyState)?.visibility = android.view.View.VISIBLE
-            findViewById<android.view.View>(R.id.rvTesisTransactions)?.visibility = android.view.View.GONE
-        } else {
-            findViewById<android.view.View>(R.id.tvTesisEmptyState)?.visibility = android.view.View.GONE
-            findViewById<android.view.View>(R.id.rvTesisTransactions)?.visibility = android.view.View.VISIBLE
-            tesisTransactionAdapter.setTransactions(FakeTesisRepository.getRecentTransactions())
-        }
-    }
     
     private fun loadLocalTransactions(): Triple<Int, Double, List<com.example.lectoryape.models.YapeNotificationRaw>> {
         return try {
