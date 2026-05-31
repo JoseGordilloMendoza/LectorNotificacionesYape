@@ -113,6 +113,7 @@ class MainActivity : AppCompatActivity() {
         checkNotificationPermission()
         updateNotificationCount()
         setupNotificationSwitch()
+        setupKioskModeSwitch()
         
         // Configurar Barra Inferior
         setupBottomNavigation()
@@ -584,6 +585,29 @@ class MainActivity : AppCompatActivity() {
             }
             
             android.util.Log.d("MainActivity", "Switch cambiado: ${if (isChecked) "ON" else "OFF"}")
+        }
+    }
+
+    private fun setupKioskModeSwitch() {
+        val switchKiosk = findViewById<com.google.android.material.switchmaterial.SwitchMaterial>(R.id.switchKioskMode)
+        val isKioskOn = modePrefs.getBoolean("pref_kiosk_mode", false)
+        switchKiosk?.isChecked = isKioskOn
+        applyKioskMode(isKioskOn)
+
+        switchKiosk?.setOnCheckedChangeListener { _, isChecked ->
+            modePrefs.edit().putBoolean("pref_kiosk_mode", isChecked).apply()
+            applyKioskMode(isChecked)
+            
+            val msg = if (isChecked) "Modo Mostrador Activado" else "Modo Mostrador Desactivado"
+            Toast.makeText(this, msg, Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    private fun applyKioskMode(keepScreenOn: Boolean) {
+        if (keepScreenOn) {
+            window.addFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+        } else {
+            window.clearFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
         }
     }
 

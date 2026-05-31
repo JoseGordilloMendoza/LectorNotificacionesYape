@@ -42,9 +42,14 @@ class TransactionAdapter : RecyclerView.Adapter<TransactionAdapter.TransactionVi
         fun bind(transaction: YapeNotificationRaw) {
             tvSenderName.text = transaction.name
             
-            // Format time (HH:mm) from timestamp
-            val sdf = java.text.SimpleDateFormat("HH:mm", java.util.Locale.getDefault())
-            tvTime.text = sdf.format(java.util.Date(transaction.timestamp))
+            // Format time relative (e.g., "Hace 5 min")
+            val relativeTime = android.text.format.DateUtils.getRelativeTimeSpanString(
+                transaction.timestamp,
+                System.currentTimeMillis(),
+                android.text.format.DateUtils.MINUTE_IN_MILLIS,
+                android.text.format.DateUtils.FORMAT_ABBREV_RELATIVE
+            )
+            tvTime.text = relativeTime
             
             tvWalletType.text = transaction.walletType
             tvAmount.text = String.format("+ S/ %.2f", transaction.amount)

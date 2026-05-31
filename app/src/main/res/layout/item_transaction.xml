@@ -4,33 +4,38 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:layout_marginBottom="8dp"
-    app:cardCornerRadius="12dp"
-    app:cardElevation="2dp"
-    app:cardBackgroundColor="@color/white">
+    app:cardCornerRadius="14dp"
+    app:cardElevation="1dp"
+    app:cardBackgroundColor="@color/white"
+    app:strokeWidth="0dp">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
         android:gravity="center_vertical"
-        android:padding="16dp">
+        android:paddingHorizontal="16dp"
+        android:paddingVertical="14dp">
 
+        <!-- Wallet icon circle -->
         <ImageView
             android:id="@+id/ivWalletIcon"
-            android:layout_width="40dp"
-            android:layout_height="40dp"
+            android:layout_width="42dp"
+            android:layout_height="42dp"
             android:background="@drawable/circle_indicator"
             android:backgroundTint="@color/kaja_teal"
-            android:padding="8dp"
-            android:src="@android:drawable/ic_menu_gallery"
-            app:tint="@color/white" />
+            android:padding="10dp"
+            android:src="@drawable/ic_person"
+            app:tint="@color/white"
+            android:contentDescription="Wallet"/>
 
+        <!-- Sender name + time + wallet type -->
         <LinearLayout
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:orientation="vertical"
-            android:layout_marginStart="16dp">
+            android:layout_marginStart="14dp">
 
             <TextView
                 android:id="@+id/tvSenderName"
@@ -41,13 +46,14 @@
                 android:textSize="15sp"
                 android:textColor="@color/kaja_teal_dark"
                 android:maxLines="1"
-                android:ellipsize="end" />
+                android:ellipsize="end"/>
 
             <LinearLayout
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:orientation="horizontal"
-                android:layout_marginTop="4dp">
+                android:gravity="center_vertical"
+                android:layout_marginTop="3dp">
 
                 <TextView
                     android:id="@+id/tvTime"
@@ -55,14 +61,15 @@
                     android:layout_height="wrap_content"
                     android:text="14:30"
                     android:textSize="12sp"
-                    android:textColor="@color/kaja_teal" />
+                    android:textColor="@color/kaja_blue_pale"/>
 
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text=" • "
-                    android:textSize="12sp"
-                    android:textColor="@color/kaja_teal" />
+                <View
+                    android:layout_width="3dp"
+                    android:layout_height="3dp"
+                    android:background="@drawable/circle_indicator"
+                    android:backgroundTint="@color/kaja_blue_pale"
+                    android:layout_marginStart="6dp"
+                    android:layout_marginEnd="6dp"/>
 
                 <TextView
                     android:id="@+id/tvWalletType"
@@ -71,20 +78,20 @@
                     android:text="YAPE"
                     android:textSize="12sp"
                     android:textStyle="bold"
-                    android:textColor="@color/kaja_teal" />
+                    android:textColor="@color/kaja_teal"/>
             </LinearLayout>
-
         </LinearLayout>
 
+        <!-- Amount -->
         <TextView
             android:id="@+id/tvAmount"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="+ S/ 0.00"
             android:textStyle="bold"
-            android:textSize="16sp"
-            android:textColor="@color/yape_green"
-            android:layout_marginStart="8dp" />
+            android:textSize="18sp"
+            android:textColor="@color/kaja_teal_dark"
+            android:layout_marginStart="12dp"/>
 
     </LinearLayout>
 

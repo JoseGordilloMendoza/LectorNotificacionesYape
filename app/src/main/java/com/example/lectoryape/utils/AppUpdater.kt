@@ -83,11 +83,69 @@ class AppUpdater(private val activity: AppCompatActivity) {
     }
 
     /**
-     * Consulta el documento Firestore con la info de la última versión.
+     * Consulta el último release de GitHub para obtener la info de versión.
+     * El tag del release debe ser el versionCode con prefijo "v" (ej. "v12").
+     * El release debe tener al menos un asset .apk adjunto.
      */
     private suspend fun fetchVersionInfo(): Map<String, Any>? {
-        Log.w(TAG, "⚠️ Actualizaciones OTA deshabilitadas temporalmente por migración a Django.")
-        return null
+        return withContext(Dispatchers.IO) {
+            try {
+                val url = "https://api.github.com/repos/JoseGordilloMendoza/LectorNotificacionesYape/releases/latest"
+                val client = okhttp3.OkHttpClient()
+                val request = okhttp3.Request.Builder()
+                    .url(url)
+                    .header("Accept", "application/vnd.github.v3+json")
+                    .build()
+
+                val response = client.newCall(request).execute()
+                if (!response.isSuccessful) {
+                    Log.w(TAG, "GitHub API respondió ${response.code}")
+                    return@withContext null
+                }
+
+                val body = response.body?.string() ?: return@withContext null
+                val json = org.json.JSONObject(body)
+
+                // Tag debe ser "v{versionCode}", ej. "v12"
+                val tagName = json.getString("tag_name")
+                val versionCode = tagName.removePrefix("v").toLongOrNull()
+                if (versionCode == null) {
+                    Log.w(TAG, "Tag '$tagName' no tiene el formato esperado v{número}")
+                    return@withContext null
+                }
+
+                val releaseName  = json.optString("name", "Nueva versión")
+                val releaseNotes = json.optString("body", "Mejoras generales").take(400)
+
+                // Buscar el primer asset .apk adjunto al release
+                val assets = json.getJSONArray("assets")
+                var downloadUrl: String? = null
+                for (i in 0 until assets.length()) {
+                    val asset = assets.getJSONObject(i)
+                    if (asset.getString("name").endsWith(".apk")) {
+                        downloadUrl = asset.getString("browser_download_url")
+                        break
+                    }
+                }
+
+                if (downloadUrl == null) {
+                    Log.w(TAG, "El release '$tagName' no tiene ningún asset .apk adjunto")
+                    return@withContext null
+                }
+
+                Log.d(TAG, "Release encontrado: $tagName ($releaseName) → $downloadUrl")
+                mapOf(
+                    "latestVersionCode" to versionCode,
+                    "latestVersionName" to releaseName,
+                    "downloadUrl"       to downloadUrl,
+                    "releaseNotes"      to releaseNotes,
+                    "isForceUpdate"     to false
+                )
+            } catch (e: Exception) {
+                Log.e(TAG, "Error consultando GitHub releases: ${e.message}")
+                null
+            }
+        }
     }
 
     /**

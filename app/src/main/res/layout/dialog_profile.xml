@@ -7,27 +7,23 @@
     android:background="@color/kaja_bg_light"
     android:orientation="vertical">
 
-    <!-- ══════════════════════════════════════════════════ -->
-    <!--  HEADER COMPACTO horizontal (avatar + datos)       -->
-    <!-- ══════════════════════════════════════════════════ -->
-
-    <!-- Franja de acento superior con gradiente KAJA (4dp) -->
+    <!-- Franja de acento superior -->
     <View
         android:layout_width="match_parent"
         android:layout_height="4dp"
         android:background="@drawable/bg_pill_gradient"/>
 
-    <!-- Tarjeta horizontal compacta: avatar izq + info der -->
+    <!-- HEADER: Avatar + datos del usuario -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
         android:background="@color/white"
-        android:padding="16dp"
+        android:padding="20dp"
         android:gravity="center_vertical"
-        android:elevation="4dp">
+        android:elevation="2dp">
 
-        <!-- Avatar con anillo de gradiente (idea #8, ahora más compacto: 68dp) -->
+        <!-- Avatar con anillo de gradiente -->
         <FrameLayout
             android:layout_width="68dp"
             android:layout_height="68dp"
@@ -52,12 +48,12 @@
                     android:layout_height="match_parent"
                     android:src="@drawable/ic_person"
                     android:scaleType="centerCrop"
-                    android:contentDescription="Foto de perfil" />
+                    android:contentDescription="Foto de perfil"/>
 
             </androidx.cardview.widget.CardView>
         </FrameLayout>
 
-        <!-- Info del usuario -->
+        <!-- Nombre, email, badge de plan -->
         <LinearLayout
             android:layout_width="0dp"
             android:layout_height="wrap_content"
@@ -72,19 +68,18 @@
                 android:textSize="17sp"
                 android:textStyle="bold"
                 android:textColor="@color/kaja_teal_dark"
-                android:layout_marginBottom="2dp"/>
+                android:layout_marginBottom="3dp"/>
 
             <TextView
                 android:id="@+id/tvProfileEmail"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="usuario@email.com"
-                android:textSize="11sp"
+                android:textSize="12sp"
                 android:textColor="@color/kaja_teal"
-                android:letterSpacing="0.03"
-                android:layout_marginBottom="6dp"/>
+                android:layout_marginBottom="8dp"/>
 
-            <!-- Badge de plan inline -->
+            <!-- Badge de plan con esquinas redondeadas -->
             <TextView
                 android:id="@+id/tvProfileStatus"
                 android:layout_width="wrap_content"
@@ -92,273 +87,260 @@
                 android:text="PLAN TRIAL"
                 android:textSize="10sp"
                 android:textStyle="bold"
-                android:textColor="@color/kaja_teal_dark"
-                android:background="@color/kaja_gold"
-                android:letterSpacing="0.12"
+                android:textColor="@color/white"
+                android:background="@drawable/bg_badge_gold"
+                android:letterSpacing="0.1"
                 android:paddingStart="10dp"
                 android:paddingEnd="10dp"
-                android:paddingTop="3dp"
-                android:paddingBottom="3dp"/>
+                android:paddingTop="4dp"
+                android:paddingBottom="4dp"/>
 
         </LinearLayout>
-
     </LinearLayout>
 
-    <!-- ══════════════════════════════════════════ -->
-    <!--  MINI-PANEL de estadísticas (idea #10)    -->
-    <!-- ══════════════════════════════════════════ -->
-    <LinearLayout
+    <!-- STATS: Total / Este mes / Hoy -->
+    <com.google.android.material.card.MaterialCardView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:background="@color/white"
-        android:elevation="4dp"
-        android:padding="16dp">
+        android:layout_marginStart="16dp"
+        android:layout_marginEnd="16dp"
+        android:layout_marginTop="16dp"
+        app:cardBackgroundColor="@color/white"
+        app:cardCornerRadius="16dp"
+        app:cardElevation="2dp">
 
-        <!-- Stat 1: Total yapeos -->
         <LinearLayout
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:orientation="vertical"
-            android:gravity="center">
+            android:layout_width="match_parent"
+            android:layout_height="80dp"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:paddingStart="8dp"
+            android:paddingEnd="8dp">
 
-            <TextView
-                android:id="@+id/tvStatTotal"
-                android:layout_width="wrap_content"
+            <LinearLayout
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:text="—"
-                android:textSize="22sp"
-                android:textStyle="bold"
-                android:textColor="@color/kaja_teal_dark"/>
+                android:layout_weight="1"
+                android:orientation="vertical"
+                android:gravity="center">
 
-            <TextView
-                android:layout_width="wrap_content"
+                <TextView
+                    android:id="@+id/tvStatTotal"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="—"
+                    android:textSize="22sp"
+                    android:textStyle="bold"
+                    android:textColor="@color/kaja_teal_dark"/>
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="TOTAL"
+                    android:textSize="9sp"
+                    android:textColor="@color/kaja_blue_pale"
+                    android:letterSpacing="0.15"
+                    android:layout_marginTop="2dp"/>
+            </LinearLayout>
+
+            <View
+                android:layout_width="1dp"
+                android:layout_height="32dp"
+                android:background="@color/kaja_pink_pale"/>
+
+            <LinearLayout
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:text="TOTAL"
-                android:textSize="9sp"
-                android:textColor="@color/kaja_blue_pale"
-                android:letterSpacing="0.15"/>
+                android:layout_weight="1"
+                android:orientation="vertical"
+                android:gravity="center">
+
+                <TextView
+                    android:id="@+id/tvStatMonth"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="—"
+                    android:textSize="22sp"
+                    android:textStyle="bold"
+                    android:textColor="@color/kaja_coral"/>
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="ESTE MES"
+                    android:textSize="9sp"
+                    android:textColor="@color/kaja_blue_pale"
+                    android:letterSpacing="0.15"
+                    android:layout_marginTop="2dp"/>
+            </LinearLayout>
+
+            <View
+                android:layout_width="1dp"
+                android:layout_height="32dp"
+                android:background="@color/kaja_pink_pale"/>
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical"
+                android:gravity="center">
+
+                <TextView
+                    android:id="@+id/tvStatToday"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="—"
+                    android:textSize="22sp"
+                    android:textStyle="bold"
+                    android:textColor="@color/kaja_gold"/>
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="HOY"
+                    android:textSize="9sp"
+                    android:textColor="@color/kaja_blue_pale"
+                    android:letterSpacing="0.15"
+                    android:layout_marginTop="2dp"/>
+            </LinearLayout>
 
         </LinearLayout>
+    </com.google.android.material.card.MaterialCardView>
 
-        <!-- Separador vertical -->
-        <View
-            android:layout_width="1dp"
-            android:layout_height="match_parent"
-            android:background="@color/kaja_pink_pale"/>
-
-        <!-- Stat 2: Este mes -->
-        <LinearLayout
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:orientation="vertical"
-            android:gravity="center">
-
-            <TextView
-                android:id="@+id/tvStatMonth"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="—"
-                android:textSize="22sp"
-                android:textStyle="bold"
-                android:textColor="@color/kaja_coral"/>
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="ESTE MES"
-                android:textSize="9sp"
-                android:textColor="@color/kaja_blue_pale"
-                android:letterSpacing="0.15"/>
-
-        </LinearLayout>
-
-        <!-- Separador vertical -->
-        <View
-            android:layout_width="1dp"
-            android:layout_height="match_parent"
-            android:background="@color/kaja_pink_pale"/>
-
-        <!-- Stat 3: Hoy -->
-        <LinearLayout
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:orientation="vertical"
-            android:gravity="center">
-
-            <TextView
-                android:id="@+id/tvStatToday"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="—"
-                android:textSize="22sp"
-                android:textStyle="bold"
-                android:textColor="@color/kaja_gold"/>
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="HOY"
-                android:textSize="9sp"
-                android:textColor="@color/kaja_blue_pale"
-                android:letterSpacing="0.15"/>
-
-        </LinearLayout>
-
-    </LinearLayout>
-
-    <!-- ══════════════════════════════════════════ -->
-    <!--  CUERPO: Info + ProgressBar + Botones     -->
-    <!-- ══════════════════════════════════════════ -->
-    <LinearLayout
+    <!-- INFO DE CUENTA -->
+    <com.google.android.material.card.MaterialCardView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="vertical"
-        android:padding="20dp">
+        android:layout_marginStart="16dp"
+        android:layout_marginEnd="16dp"
+        android:layout_marginTop="12dp"
+        app:cardBackgroundColor="@color/white"
+        app:cardCornerRadius="16dp"
+        app:cardElevation="2dp">
 
-        <!-- Sección: INFO DE CUENTA -->
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="INFORMACIÓN DE CUENTA"
-            android:textSize="10sp"
-            android:textStyle="bold"
-            android:textColor="@color/kaja_blue_pale"
-            android:letterSpacing="0.15"
-            android:layout_marginBottom="12dp"/>
-
-        <!-- Fila: Rol del usuario con ic_kaja_cross (idea #3) -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:gravity="center_vertical"
-            android:paddingTop="8dp"
-            android:paddingBottom="8dp">
-
-            <ImageView
-                android:layout_width="12dp"
-                android:layout_height="12dp"
-                android:src="@drawable/ic_kaja_cross"
-                android:layout_marginEnd="12dp"/>
+            android:orientation="vertical"
+            android:padding="20dp">
 
             <TextView
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text="Rol"
-                android:textSize="13sp"
-                android:textColor="@color/kaja_teal"/>
-
-            <TextView
-                android:id="@+id/tvProfileRole"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Owner"
-                android:textSize="13sp"
+                android:text="INFORMACIÓN DE CUENTA"
+                android:textSize="10sp"
                 android:textStyle="bold"
-                android:textColor="@color/kaja_teal_dark"/>
+                android:textColor="@color/kaja_blue_pale"
+                android:letterSpacing="0.15"
+                android:layout_marginBottom="4dp"/>
+
+            <!-- Fila: Rol -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="48dp"
+                android:orientation="horizontal"
+                android:gravity="center_vertical">
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="Rol"
+                    android:textSize="14sp"
+                    android:textColor="@color/kaja_teal"/>
+
+                <TextView
+                    android:id="@+id/tvProfileRole"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Owner"
+                    android:textSize="14sp"
+                    android:textStyle="bold"
+                    android:textColor="@color/kaja_teal_dark"/>
+            </LinearLayout>
+
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="1dp"
+                android:background="@color/kaja_bg_light"/>
+
+            <!-- Fila: Miembro desde -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="48dp"
+                android:orientation="horizontal"
+                android:gravity="center_vertical">
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="Miembro desde"
+                    android:textSize="14sp"
+                    android:textColor="@color/kaja_teal"/>
+
+                <TextView
+                    android:id="@+id/tvProfileCreatedAt"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="—"
+                    android:textSize="14sp"
+                    android:textStyle="bold"
+                    android:textColor="@color/kaja_teal_dark"/>
+            </LinearLayout>
+
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="1dp"
+                android:background="@color/kaja_bg_light"/>
+
+            <!-- Fila: Vence el -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="48dp"
+                android:orientation="horizontal"
+                android:gravity="center_vertical">
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="Vence el"
+                    android:textSize="14sp"
+                    android:textColor="@color/kaja_teal"/>
+
+                <TextView
+                    android:id="@+id/tvProfileTrialEnd"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="—"
+                    android:textSize="14sp"
+                    android:textStyle="bold"
+                    android:textColor="@color/kaja_teal_dark"/>
+            </LinearLayout>
+
         </LinearLayout>
+    </com.google.android.material.card.MaterialCardView>
 
-        <!-- Divisor de circuito (idea #2) -->
-        <View
-            android:layout_width="match_parent"
-            android:layout_height="12dp"
-            android:background="@drawable/divider_circuit"
-            android:layout_marginBottom="4dp"/>
+    <!-- CERRAR SESIÓN -->
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/btnProfileLogout"
+        android:layout_width="match_parent"
+        android:layout_height="52dp"
+        android:layout_marginStart="16dp"
+        android:layout_marginEnd="16dp"
+        android:layout_marginTop="20dp"
+        android:text="Cerrar sesión"
+        android:textSize="14sp"
+        android:textStyle="bold"
+        android:textColor="#FFFFFF"
+        app:backgroundTint="@color/kaja_coral"
+        app:cornerRadius="16dp"/>
 
-        <!-- Fila: Fecha de registro con ic_kaja_cross (idea #3) -->
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:gravity="center_vertical"
-            android:paddingTop="8dp"
-            android:paddingBottom="8dp">
-
-            <ImageView
-                android:layout_width="12dp"
-                android:layout_height="12dp"
-                android:src="@drawable/ic_kaja_cross"
-                android:layout_marginEnd="12dp"/>
-
-            <TextView
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text="Miembro desde"
-                android:textSize="13sp"
-                android:textColor="@color/kaja_teal"/>
-
-            <TextView
-                android:id="@+id/tvProfileCreatedAt"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="—"
-                android:textSize="13sp"
-                android:textStyle="bold"
-                android:textColor="@color/kaja_teal_dark"/>
-        </LinearLayout>
-
-        <!-- Divisor de circuito (idea #2) -->
-        <View
-            android:layout_width="match_parent"
-            android:layout_height="12dp"
-            android:background="@drawable/divider_circuit"
-            android:layout_marginBottom="4dp"/>
-
-        <!-- Fila: Fin de prueba con ic_kaja_cross (idea #3) -->
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:gravity="center_vertical"
-            android:paddingTop="8dp"
-            android:paddingBottom="8dp">
-
-            <ImageView
-                android:layout_width="12dp"
-                android:layout_height="12dp"
-                android:src="@drawable/ic_kaja_cross"
-                android:layout_marginEnd="12dp"/>
-
-            <TextView
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text="Vence el"
-                android:textSize="13sp"
-                android:textColor="@color/kaja_teal"/>
-
-            <TextView
-                android:id="@+id/tvProfileTrialEnd"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="—"
-                android:textSize="13sp"
-                android:textStyle="bold"
-                android:textColor="@color/kaja_coral"/>
-        </LinearLayout>
-
-
-        <!-- Botón Cerrar Sesión (MaterialButton requerido por MainActivity.kt) -->
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/btnProfileLogout"
-            android:layout_width="match_parent"
-            android:layout_height="48dp"
-            android:text="CERRAR SESIÓN"
-            android:textSize="13sp"
-            android:textStyle="bold"
-            android:textColor="#FFFFFF"
-            android:letterSpacing="0.08"
-            app:backgroundTint="@color/kaja_coral"
-            app:cornerRadius="16dp"
-            app:icon="@drawable/ic_person"
-            app:iconTint="@android:color/white"/>
-
-    </LinearLayout>
+    <!-- Espaciado inferior para navegación por gestos -->
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="32dp"/>
 
 </LinearLayout>
