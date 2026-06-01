@@ -1,4 +1,4 @@
-package com.example.lectoryape
+﻿package com.example.kajaapp
 
 import android.content.BroadcastReceiver
 import android.content.Context
@@ -21,10 +21,10 @@ import androidx.core.content.FileProvider
 import androidx.core.view.isVisible
 import androidx.lifecycle.lifecycleScope
 
-import com.example.lectoryape.auth.SupabaseAuthManager
-import com.example.lectoryape.databinding.ActivityMainBinding
-import com.example.lectoryape.service.YapeNotificationListenerService
-import com.example.lectoryape.storage.YapeNotificationStorage
+import com.example.kajaapp.auth.SupabaseAuthManager
+import com.example.kajaapp.databinding.ActivityMainBinding
+import com.example.kajaapp.service.YapeNotificationListenerService
+import com.example.kajaapp.storage.YapeNotificationStorage
 import java.io.File
 import java.util.Locale
 import kotlinx.coroutines.Dispatchers
@@ -39,8 +39,8 @@ class MainActivity : AppCompatActivity() {
     private lateinit var binding: ActivityMainBinding
     private lateinit var storage: YapeNotificationStorage
     private lateinit var supabaseAuthManager: SupabaseAuthManager
-    private lateinit var appUpdater: com.example.lectoryape.utils.AppUpdater
-    private lateinit var transactionAdapter: com.example.lectoryape.adapters.TransactionAdapter
+    private lateinit var appUpdater: com.example.kajaapp.utils.AppUpdater
+    private lateinit var transactionAdapter: com.example.kajaapp.adapters.TransactionAdapter
     
     // SharedPreferences para guardar la preferencia del switch
     private val prefs by lazy {
@@ -82,7 +82,7 @@ class MainActivity : AppCompatActivity() {
         setSupportActionBar(toolbar)
 
         storage = YapeNotificationStorage(this)
-        appUpdater = com.example.lectoryape.utils.AppUpdater(this)
+        appUpdater = com.example.kajaapp.utils.AppUpdater(this)
 
         // Verificar suscripción ANTES de inicializar la app
         checkSubscription()
@@ -100,7 +100,7 @@ class MainActivity : AppCompatActivity() {
         setupUI()
 
         // Configurar RecyclerView
-        transactionAdapter = com.example.lectoryape.adapters.TransactionAdapter()
+        transactionAdapter = com.example.kajaapp.adapters.TransactionAdapter()
         val rvTransactions = findViewById<androidx.recyclerview.widget.RecyclerView>(R.id.rvTransactions)
         rvTransactions?.adapter = transactionAdapter
 
@@ -125,8 +125,11 @@ class MainActivity : AppCompatActivity() {
 
         // Verificar si hay una actualización OTA disponible (silencioso, no bloquea la UI)
         appUpdater.checkForUpdates()
-        
+
         setupDeviceRegistration()
+
+        // Heartbeat al abrir la app — indica al backend que el dispositivo está activo
+        sendStartupHeartbeat()
     }
     
     private fun setupDeviceRegistration() {
@@ -143,13 +146,13 @@ class MainActivity : AppCompatActivity() {
                 if (!tenantId.isNullOrEmpty() && tenantId != "null") {
                     val deviceName = Build.MODEL
                     val currentDeviceId = prefs.getString("device_id", "") ?: ""
-                    val req = com.example.lectoryape.network.models.DeviceRegistrationRequest(
+                    val req = com.example.kajaapp.network.models.DeviceRegistrationRequest(
                         tenant = tenantId,
                         deviceId = currentDeviceId,
                         name = deviceName
                     )
                     try {
-                        val response = com.example.lectoryape.network.RetrofitClient.api.registerDevice(req)
+                        val response = com.example.kajaapp.network.RetrofitClient.api.registerDevice(req)
                         // If 200/201 or if it's 400 (already exists), we mark it as registered to stop spamming
                         if (response.isSuccessful || response.code() == 400) {
                             prefs.edit().putBoolean("is_device_registered", true).apply()
@@ -241,7 +244,7 @@ class MainActivity : AppCompatActivity() {
      */
     private fun openWebPortal() {
         try {
-            val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://yapevisualizer.onrender.com"))
+            val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://frontend-pos-gold.vercel.app/"))
             startActivity(intent)
         } catch (e: Exception) {
             Toast.makeText(this, "No se pudo abrir el navegador", Toast.LENGTH_SHORT).show()
@@ -258,7 +261,7 @@ class MainActivity : AppCompatActivity() {
      * Delega la lógica al BatteryOptimizationHelper
      */
     private fun checkBatteryOptimization() {
-        com.example.lectoryape.utils.BatteryOptimizationHelper.checkAndRequest(this)
+        com.example.kajaapp.utils.BatteryOptimizationHelper.checkAndRequest(this)
     }
 
     private fun setupBottomNavigation() {
@@ -350,7 +353,7 @@ class MainActivity : AppCompatActivity() {
             } catch (e: Exception) {}
 
             try {
-                val response = com.example.lectoryape.network.RetrofitClient.api.getCurrentSubscription()
+                val response = com.example.kajaapp.network.RetrofitClient.api.getCurrentSubscription()
                 if (response.isSuccessful) {
                     val sub = response.body()
                     if (sub != null) {
@@ -464,7 +467,7 @@ class MainActivity : AppCompatActivity() {
         binding.btnOpenWeb.setOnClickListener { openWebPortal() }
         // Botón de simulación DEV (Oculto en Producción)
         val btnSimulate = findViewById<android.view.View>(R.id.btnSimulateYape)
-        if (com.example.lectoryape.BuildConfig.DEBUG) {
+        if (com.example.kajaapp.BuildConfig.DEBUG) {
             btnSimulate?.isVisible = true
             btnSimulate?.setOnClickListener {
                 simulateYapePayment()
@@ -482,7 +485,7 @@ class MainActivity : AppCompatActivity() {
             return
         }
 
-        val dummyPayment = com.example.lectoryape.models.YapeNotificationRaw(
+        val dummyPayment = com.example.kajaapp.models.YapeNotificationRaw(
             title = "Yape",
             name = "Prueba Dev ${(100..999).random()}",
             amount = (1..50).random().toDouble() + 0.50,
@@ -503,7 +506,7 @@ class MainActivity : AppCompatActivity() {
         // 2. Enviar a Django
         lifecycleScope.launch(Dispatchers.IO) {
             try {
-                val payload = com.example.lectoryape.network.models.NotificationPayload(
+                val payload = com.example.kajaapp.network.models.NotificationPayload(
                     tenant = tenantId,
                     branch = null,
                     amount = dummyPayment.amount,
@@ -512,7 +515,7 @@ class MainActivity : AppCompatActivity() {
                     wallet_type = dummyPayment.walletType,
                     raw_payload = mapOf("simulated" to true, "msg" to "Pago generado desde boton DEV")
                 )
-                val response = com.example.lectoryape.network.RetrofitClient.api.sendNotification(payload)
+                val response = com.example.kajaapp.network.RetrofitClient.api.sendNotification(payload)
                 withContext(Dispatchers.Main) {
                     if (response.isSuccessful) {
                         Toast.makeText(this@MainActivity, "✅ Pago simulado exitoso", Toast.LENGTH_SHORT).show()
@@ -661,7 +664,7 @@ class MainActivity : AppCompatActivity() {
 
 
     
-    private fun loadLocalTransactions(): Triple<Int, Double, List<com.example.lectoryape.models.YapeNotificationRaw>> {
+    private fun loadLocalTransactions(): Triple<Int, Double, List<com.example.kajaapp.models.YapeNotificationRaw>> {
         return try {
             val fileContent = storage.getAllNotificationsAsText()
             if (fileContent.isBlank()) return Triple(0, 0.0, emptyList())
@@ -675,7 +678,7 @@ class MainActivity : AppCompatActivity() {
 
             var countToday = 0
             var sumToday = 0.0
-            val transactionsToday = mutableListOf<com.example.lectoryape.models.YapeNotificationRaw>()
+            val transactionsToday = mutableListOf<com.example.kajaapp.models.YapeNotificationRaw>()
 
             // Omitir cabecera (lines[0])
             for (i in 1 until lines.size) {
@@ -694,7 +697,7 @@ class MainActivity : AppCompatActivity() {
                         val timestamp = try { timeFormat.parse(fechaHoraStr)?.time ?: 0L } catch(e:Exception){0L}
                         
                         transactionsToday.add(
-                            com.example.lectoryape.models.YapeNotificationRaw(
+                            com.example.kajaapp.models.YapeNotificationRaw(
                                 title = "Yape",
                                 name = parts[1].replace("\"", ""),
                                 amount = amount,
@@ -793,6 +796,26 @@ class MainActivity : AppCompatActivity() {
         // Limpiar el receiver del AppUpdater para evitar memory leaks
         if (::appUpdater.isInitialized) {
             appUpdater.cleanup()
+        }
+    }
+
+    private fun sendStartupHeartbeat() {
+        lifecycleScope.launch(Dispatchers.IO) {
+            try {
+                val tenantId = modePrefs.getString("tenant_id", "") ?: ""
+                val deviceId = prefs.getString("device_id", "") ?: ""
+                if (tenantId.isBlank() || tenantId == "null" || deviceId.isBlank()) return@launch
+
+                val payload = com.example.kajaapp.network.models.HeartbeatPayload(
+                    tenantId = tenantId,
+                    deviceId = deviceId,
+                    timestamp = System.currentTimeMillis()
+                )
+                com.example.kajaapp.network.RetrofitClient.api.sendHeartbeat(payload)
+                android.util.Log.d("MainActivity", "💓 Heartbeat de inicio enviado")
+            } catch (e: Exception) {
+                android.util.Log.w("MainActivity", "Heartbeat de inicio fallido: ${e.message}")
+            }
         }
     }
 

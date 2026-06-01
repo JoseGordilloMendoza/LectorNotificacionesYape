@@ -4,15 +4,15 @@
     "type": "APK",
     "kind": "Directory"
   },
-  "applicationId": "com.example.lectoryape",
+  "applicationId": "com.example.kajaapp",
   "variantName": "release",
   "elements": [
     {
       "type": "SINGLE",
       "filters": [],
       "attributes": [],
-      "versionCode": 11,
-      "versionName": "2.1",
+      "versionCode": 14,
+      "versionName": "2.4",
       "outputFile": "app-release.apk"
     }
   ],

@@ -1,4 +1,4 @@
-package com.example.lectoryape.service
+﻿package com.example.kajaapp.service
 
 import android.content.BroadcastReceiver
 import android.content.ComponentName
@@ -11,13 +11,13 @@ import android.os.PowerManager
 import android.service.notification.NotificationListenerService
 import android.service.notification.StatusBarNotification
 import android.util.Log
-import com.example.lectoryape.auth.SupabaseAuthManager
-import com.example.lectoryape.network.RetrofitClient
-import com.example.lectoryape.network.models.NotificationPayload
-import com.example.lectoryape.models.YapeNotificationRaw
-import com.example.lectoryape.storage.YapeNotificationStorage
-import com.example.lectoryape.utils.NotificationHelper
-import com.example.lectoryape.utils.YapeParser
+import com.example.kajaapp.auth.SupabaseAuthManager
+import com.example.kajaapp.network.RetrofitClient
+import com.example.kajaapp.network.models.NotificationPayload
+import com.example.kajaapp.models.YapeNotificationRaw
+import com.example.kajaapp.storage.YapeNotificationStorage
+import com.example.kajaapp.utils.NotificationHelper
+import com.example.kajaapp.utils.YapeParser
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -78,10 +78,10 @@ class YapeNotificationListenerService : NotificationListenerService() {
         private const val PLIN_PACKAGE = "pe.com.interbank.mobilebanking"
         
         // broadcast notifica a MainActivity
-        const val ACTION_NOTIFICATION_SAVED = "com.example.lectoryape.NOTIFICATION_SAVED"
+        const val ACTION_NOTIFICATION_SAVED = "com.example.kajaapp.NOTIFICATION_SAVED"
         
         // broadcast controla la notificación persistente
-        const val ACTION_TOGGLE_NOTIFICATION = "com.example.lectoryape.TOGGLE_NOTIFICATION"
+        const val ACTION_TOGGLE_NOTIFICATION = "com.example.kajaapp.TOGGLE_NOTIFICATION"
         
         // Key para SharedPreferences
         const val PREF_SHOW_NOTIFICATION = "show_persistent_notification"
@@ -169,6 +169,7 @@ class YapeNotificationListenerService : NotificationListenerService() {
 
             // Subir al backend Django
             serviceScope.launch {
+                ensureFreshToken()
                 try {
                     val tenantId = applicationContext.getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
                         .getString("tenant_id", "")
@@ -202,7 +203,7 @@ class YapeNotificationListenerService : NotificationListenerService() {
     }
 
     private fun logYapePayment(payment: YapeNotificationRaw) {
-        val fecha = com.example.lectoryape.utils.DateFormatter.formatTimestamp(payment.timestamp)
+        val fecha = com.example.kajaapp.utils.DateFormatter.formatTimestamp(payment.timestamp)
         Log.d(TAG, """
         ═══ pago yape ═══
         Cliente: ${payment.name}
@@ -331,31 +332,76 @@ class YapeNotificationListenerService : NotificationListenerService() {
     private fun startHeartbeat() {
         if (heartbeatJob?.isActive == true) return
         heartbeatJob = serviceScope.launch {
+            // Envío inmediato al arrancar — el backend sabe que el dispositivo está online
+            sendHeartbeatNow()
             while (isActive) {
-                try {
-                    val tenantId = applicationContext.getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
-                        .getString("tenant_id", "")
-                    val deviceId = applicationContext.getSharedPreferences("yape_listener_prefs", Context.MODE_PRIVATE)
-                        .getString("device_id", "")
-                    
-                    if (!tenantId.isNullOrEmpty() && tenantId != "null" && !deviceId.isNullOrEmpty()) {
-                        val payload = com.example.lectoryape.network.models.HeartbeatPayload(
-                            tenantId = tenantId,
-                            deviceId = deviceId,
-                            timestamp = System.currentTimeMillis()
-                        )
-                        RetrofitClient.api.sendHeartbeat(payload)
-                        Log.d(TAG, "💓 Heartbeat enviado al backend para el device_id: $deviceId")
-                    }
-                    
-                    // Renovar wake lock periódicamente para mantener el CPU vivo
-                    acquireWakeLock()
-                } catch (e: Exception) {
-                    Log.e(TAG, "❌ Error al enviar heartbeat: ${e.message}")
-                }
-                // Esperar 5 minutos
-                kotlinx.coroutines.delay(5 * 60 * 1000L)
+                // Esperar 6 minutos antes del siguiente latido
+                kotlinx.coroutines.delay(6 * 60 * 1000L)
+                sendHeartbeatNow()
+                // Renovar wake lock en cada ciclo (timeout configurado en 20 min)
+                acquireWakeLock()
             }
+        }
+    }
+
+    /**
+     * Refresca el token de Supabase si está próximo a expirar o es nulo.
+     * El cliente tiene autoLoadFromStorage pero no auto-refresca en background.
+     * Decodifica el JWT manualmente (sin librerías externas) para verificar el exp.
+     */
+    private suspend fun ensureFreshToken() {
+        try {
+            val token = com.example.kajaapp.auth.SupabaseManager.auth
+                .currentSessionOrNull()?.accessToken
+            if (token == null || isTokenExpiringSoon(token)) {
+                Log.d(TAG, "Token nulo o próximo a expirar — refrescando")
+                com.example.kajaapp.auth.SupabaseManager.auth.refreshCurrentSession()
+                Log.d(TAG, "Token refrescado correctamente")
+            }
+        } catch (e: Exception) {
+            Log.w(TAG, "Token refresh fallido: ${e.message}")
+        }
+    }
+
+    /** Devuelve true si el token JWT expira en menos de 5 minutos o no se puede leer. */
+    private fun isTokenExpiringSoon(accessToken: String): Boolean {
+        return try {
+            val payload = accessToken.split(".").getOrNull(1) ?: return true
+            val decoded = String(
+                android.util.Base64.decode(
+                    payload,
+                    android.util.Base64.URL_SAFE or android.util.Base64.NO_PADDING
+                )
+            )
+            val exp = org.json.JSONObject(decoded).getLong("exp") // segundos Unix
+            val nowPlusFiveMin = System.currentTimeMillis() / 1000 + 300
+            exp < nowPlusFiveMin
+        } catch (e: Exception) {
+            true // si no se puede leer, mejor refrescar
+        }
+    }
+
+    private suspend fun sendHeartbeatNow() {
+        ensureFreshToken()
+        try {
+            val prefs = applicationContext.getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
+            val tenantId = prefs.getString("tenant_id", "") ?: ""
+            val deviceId = applicationContext.getSharedPreferences("yape_listener_prefs", Context.MODE_PRIVATE)
+                .getString("device_id", "") ?: ""
+
+            if (tenantId.isBlank() || tenantId == "null" || deviceId.isBlank()) {
+                Log.w(TAG, "Heartbeat omitido: tenantId o deviceId no configurados")
+                return
+            }
+            val payload = com.example.kajaapp.network.models.HeartbeatPayload(
+                tenantId = tenantId,
+                deviceId = deviceId,
+                timestamp = System.currentTimeMillis()
+            )
+            RetrofitClient.api.sendHeartbeat(payload)
+            Log.d(TAG, "💓 Heartbeat enviado (device: $deviceId)")
+        } catch (e: Exception) {
+            Log.e(TAG, "Error al enviar heartbeat: ${e.message}")
         }
     }
 
@@ -366,24 +412,23 @@ class YapeNotificationListenerService : NotificationListenerService() {
     }
     
     // wake lock para mantener el CPU activo
-    // Timeout de 10 minutos: el heartbeat lo renueva periódicamente antes que expire
+    // Timeout de 20 minutos: el heartbeat (cada 15 min) lo renueva antes que expire
     private fun acquireWakeLock() {
         try {
             if (wakeLock == null) {
                 val powerManager = getSystemService(Context.POWER_SERVICE) as PowerManager
                 wakeLock = powerManager.newWakeLock(
                     PowerManager.PARTIAL_WAKE_LOCK,
-                    "YapeLector::NotificationWakeLock"
+                    "KAJAapp::ServiceWakeLock"
                 )
                 wakeLock?.setReferenceCounted(false)
             }
-            
             if (wakeLock?.isHeld == false) {
-                wakeLock?.acquire(10 * 60 * 1000L) // 10 minutos máximo (seguridad)
-                Log.d(TAG, "wake lock adquirido (timeout: 10min)")
+                wakeLock?.acquire(20 * 60 * 1000L) // 20 minutos — renovado por heartbeat cada 15
+                Log.d(TAG, "Wake lock adquirido (timeout: 20min)")
             }
         } catch (e: Exception) {
-            Log.e(TAG, "wake lock error: ${e.message}", e)
+            Log.e(TAG, "Wake lock error: ${e.message}", e)
         }
     }
     

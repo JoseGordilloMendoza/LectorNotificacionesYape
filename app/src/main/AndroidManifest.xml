@@ -35,7 +35,7 @@
         android:roundIcon="@mipmap/ic_kaja_round"
         android:supportsRtl="true"
         android:usesCleartextTraffic="true"
-        android:theme="@style/Theme.LectorYape">
+        android:theme="@style/Theme.KAJAapp">
         <activity
             android:name=".MainActivity"
             android:exported="false"/>

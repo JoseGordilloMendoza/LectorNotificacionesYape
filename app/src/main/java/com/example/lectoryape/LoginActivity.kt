@@ -1,4 +1,4 @@
-package com.example.lectoryape
+﻿package com.example.kajaapp
 
 import android.content.Intent
 import android.os.Bundle
@@ -8,10 +8,10 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.view.isVisible
 import androidx.lifecycle.lifecycleScope
-import com.example.lectoryape.auth.SupabaseAuthManager
-import com.example.lectoryape.auth.SupabaseManager
-import com.example.lectoryape.databinding.ActivityLoginBinding
-import com.example.lectoryape.network.RetrofitClient
+import com.example.kajaapp.auth.SupabaseAuthManager
+import com.example.kajaapp.auth.SupabaseManager
+import com.example.kajaapp.databinding.ActivityLoginBinding
+import com.example.kajaapp.network.RetrofitClient
 import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.gms.auth.api.signin.GoogleSignInClient
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions

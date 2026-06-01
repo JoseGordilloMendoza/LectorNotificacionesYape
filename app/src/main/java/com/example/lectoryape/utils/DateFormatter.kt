@@ -1,4 +1,4 @@
-package com.example.lectoryape.utils
+﻿package com.example.kajaapp.utils
 
 import java.text.SimpleDateFormat
 import java.util.Date

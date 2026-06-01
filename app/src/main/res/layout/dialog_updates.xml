@@ -4,84 +4,107 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/white"
+    android:background="@color/kaja_bg_light"
     android:orientation="vertical">
 
-        <!-- HEADER con ícono y título -->
+    <!-- Franja de acento superior -->
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="4dp"
+        android:background="@drawable/bg_pill_gradient"/>
+
+    <!-- HEADER -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:background="@color/white"
+        android:paddingStart="20dp"
+        android:paddingEnd="20dp"
+        android:paddingTop="20dp"
+        android:paddingBottom="20dp"
+        android:elevation="2dp">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Actualizaciones"
+            android:textSize="20sp"
+            android:textStyle="bold"
+            android:textColor="@color/kaja_teal_dark"/>
+
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:background="@color/kaja_bg_light"
-            android:padding="24dp"
-            android:gravity="center_horizontal">
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:layout_marginTop="6dp">
 
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="¡Aviso!"
-                android:textSize="20sp"
-                android:textColor="@color/kaja_gold"
-                android:layout_marginBottom="8dp"/>
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Actualizaciones"
-                android:textSize="20sp"
-                android:textStyle="bold"
-                android:textColor="@color/kaja_teal_dark"
-                android:letterSpacing="0.05"/>
+            <ProgressBar
+                android:id="@+id/pbDialogLoading"
+                android:layout_width="16dp"
+                android:layout_height="16dp"
+                android:indeterminateTint="@color/kaja_coral"
+                android:layout_marginEnd="8dp"
+                android:visibility="visible"/>
 
             <TextView
                 android:id="@+id/tvDialogStatus"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Estado: Calculando..."
+                android:text="Verificando..."
                 android:textSize="12sp"
-                android:textColor="@color/kaja_teal"
-                android:layout_marginTop="4dp"/>
-
+                android:textColor="@color/kaja_teal"/>
         </LinearLayout>
 
-        <!-- CUERPO BLANCO -->
+    </LinearLayout>
+
+    <!-- CUERPO -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="16dp">
+
+        <!-- Comparación de versiones -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:padding="20dp">
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:layout_marginBottom="12dp">
 
-            <!-- Fila de versiones (Tu versión vs Última) -->
-            <LinearLayout
-                android:layout_width="match_parent"
+            <!-- Tu versión -->
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:layout_marginBottom="16dp">
+                android:layout_weight="1"
+                app:cardBackgroundColor="@color/white"
+                app:cardCornerRadius="16dp"
+                app:cardElevation="2dp">
 
-                <!-- Columna: Tu versión -->
                 <LinearLayout
-                    android:layout_width="0dp"
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_weight="1"
                     android:orientation="vertical"
-                    android:background="@color/kaja_bg_light"
-                    android:padding="12dp"
-                    android:gravity="center_horizontal">
+                    android:gravity="center_horizontal"
+                    android:padding="16dp">
 
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="Tu versión"
-                        android:textSize="11sp"
-                        android:textColor="@color/kaja_teal"
-                        android:layout_marginBottom="4dp"/>
+                        android:text="TU VERSIÓN"
+                        android:textSize="9sp"
+                        android:textColor="@color/kaja_blue_pale"
+                        android:letterSpacing="0.15"
+                        android:layout_marginBottom="6dp"/>
 
                     <TextView
                         android:id="@+id/tvDialogCurrentVersion"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="v1.7"
-                        android:textSize="22sp"
+                        android:text="v2.1"
+                        android:textSize="24sp"
                         android:textStyle="bold"
                         android:textColor="@color/kaja_teal_dark"/>
 
@@ -89,76 +112,101 @@
                         android:id="@+id/tvDialogCurrentBuild"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="build 7"
+                        android:text="build 11"
                         android:textSize="10sp"
-                        android:textColor="@color/kaja_teal"/>
+                        android:textColor="@color/kaja_blue_pale"
+                        android:layout_marginTop="2dp"/>
                 </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
 
-                <!-- Flecha separadora -->
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_gravity="center_vertical"
-                    android:text="→"
-                    android:textSize="20sp"
-                    android:textColor="@color/kaja_teal_dark"
-                    android:paddingStart="8dp"
-                    android:paddingEnd="8dp"/>
+            <!-- Flecha -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center_vertical"
+                android:text="→"
+                android:textSize="18sp"
+                android:textColor="@color/kaja_blue_pale"
+                android:paddingStart="10dp"
+                android:paddingEnd="10dp"/>
 
-                <!-- Columna: Última versión -->
+            <!-- Última versión -->
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                app:cardBackgroundColor="@color/white"
+                app:cardCornerRadius="16dp"
+                app:cardElevation="2dp">
+
                 <LinearLayout
-                    android:layout_width="0dp"
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_weight="1"
                     android:orientation="vertical"
-                    android:background="@color/kaja_bg_light"
-                    android:padding="12dp"
-                    android:gravity="center_horizontal">
+                    android:gravity="center_horizontal"
+                    android:padding="16dp">
 
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="Última versión"
-                        android:textSize="11sp"
-                        android:textColor="@color/kaja_teal"
-                        android:layout_marginBottom="4dp"/>
+                        android:text="ÚLTIMA VERSIÓN"
+                        android:textSize="9sp"
+                        android:textColor="@color/kaja_blue_pale"
+                        android:letterSpacing="0.15"
+                        android:layout_marginBottom="6dp"/>
 
                     <TextView
                         android:id="@+id/tvDialogLatestVersion"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="v1.7"
-                        android:textSize="22sp"
+                        android:text="—"
+                        android:textSize="24sp"
                         android:textStyle="bold"
-                        android:textColor="@color/kaja_coral"/>
+                        android:textColor="@color/kaja_teal_dark"/>
 
                     <TextView
                         android:id="@+id/tvDialogLatestBuild"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="build 7"
+                        android:text="—"
                         android:textSize="10sp"
-                        android:textColor="@color/kaja_teal"/>
+                        android:textColor="@color/kaja_blue_pale"
+                        android:layout_marginTop="2dp"/>
                 </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
 
-            </LinearLayout>
+        </LinearLayout>
 
-            <!-- Separador -->
+        <!-- Sección novedades -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:layout_marginBottom="8dp">
+
             <View
-                android:layout_width="match_parent"
-                android:layout_height="1dp"
-                android:background="@color/kaja_pink_pale"
-                android:layout_marginBottom="14dp"/>
+                android:layout_width="3dp"
+                android:layout_height="16dp"
+                android:background="@color/kaja_coral"
+                android:layout_marginEnd="10dp"/>
 
-            <!-- Notas de la versión -->
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Novedades"
                 android:textSize="13sp"
                 android:textStyle="bold"
-                android:textColor="@color/kaja_teal_dark"
-                android:layout_marginBottom="6dp"/>
+                android:textColor="@color/kaja_teal_dark"/>
+        </LinearLayout>
+
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="20dp"
+            app:cardBackgroundColor="@color/white"
+            app:cardCornerRadius="16dp"
+            app:cardElevation="2dp">
 
             <TextView
                 android:id="@+id/tvDialogReleaseNotes"
@@ -167,38 +215,41 @@
                 android:text="Sin notas disponibles"
                 android:textSize="13sp"
                 android:textColor="@color/kaja_teal_dark"
-                android:lineSpacingExtra="3dp"
-                android:background="@color/kaja_bg_light"
-                android:padding="12dp"
-                android:layout_marginBottom="20dp"/>
+                android:lineSpacingExtra="4dp"
+                android:padding="16dp"/>
+        </com.google.android.material.card.MaterialCardView>
 
-            <!-- Botón principal (Instalar / Cerrar) -->
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/btnDialogAction"
-                android:layout_width="match_parent"
-                android:layout_height="48dp"
-                android:text="Cerrar"
-                android:textSize="14sp"
-                android:textStyle="bold"
-                android:textColor="#FFFFFF"
-                app:backgroundTint="@color/kaja_teal"
-                app:cornerRadius="12dp"
-                android:layout_marginBottom="8dp"/>
+        <!-- Botón principal -->
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnDialogAction"
+            android:layout_width="match_parent"
+            android:layout_height="52dp"
+            android:text="Cerrar"
+            android:textSize="14sp"
+            android:textStyle="bold"
+            android:textColor="#FFFFFF"
+            app:backgroundTint="@color/kaja_teal_dark"
+            app:cornerRadius="16dp"
+            android:layout_marginBottom="8dp"/>
 
-            <!-- Botón secundario (Después / oculto) -->
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/btnDialogDismiss"
-                android:layout_width="match_parent"
-                android:layout_height="40dp"
-                android:text="Más tarde"
-                android:textSize="13sp"
-                android:textColor="@color/kaja_coral"
-                android:visibility="gone"
-                app:backgroundTint="@android:color/transparent"
-                app:strokeColor="@color/kaja_coral"
-                app:strokeWidth="1dp"
-                app:cornerRadius="12dp"/>
+        <!-- Botón secundario -->
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnDialogDismiss"
+            style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+            android:layout_width="match_parent"
+            android:layout_height="44dp"
+            android:text="Más tarde"
+            android:textSize="13sp"
+            android:textColor="@color/kaja_coral"
+            android:visibility="gone"
+            app:strokeColor="@color/kaja_coral"
+            app:strokeWidth="1dp"
+            app:cornerRadius="16dp"/>
 
-        </LinearLayout>
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="24dp"/>
 
     </LinearLayout>
+
+</LinearLayout>

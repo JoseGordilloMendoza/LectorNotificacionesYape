@@ -1,11 +1,11 @@
-package com.example.lectoryape.repository
+﻿package com.example.kajaapp.repository
 
-import com.example.lectoryape.models.TesisBusinessUiModel
-import com.example.lectoryape.models.TesisInvitationUiModel
-import com.example.lectoryape.models.TesisMemberUiModel
-import com.example.lectoryape.models.TesisStallUiModel
-import com.example.lectoryape.models.TesisTransactionUiModel
-import com.example.lectoryape.models.TesisWorkSessionUiModel
+import com.example.kajaapp.models.TesisBusinessUiModel
+import com.example.kajaapp.models.TesisInvitationUiModel
+import com.example.kajaapp.models.TesisMemberUiModel
+import com.example.kajaapp.models.TesisStallUiModel
+import com.example.kajaapp.models.TesisTransactionUiModel
+import com.example.kajaapp.models.TesisWorkSessionUiModel
 
 object FakeTesisRepository {
 

@@ -1,4 +1,4 @@
-package com.example.lectoryape
+﻿package com.example.kajaapp
 
 import org.junit.Test
 

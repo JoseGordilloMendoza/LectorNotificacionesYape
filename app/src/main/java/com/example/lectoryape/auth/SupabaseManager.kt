@@ -1,9 +1,9 @@
-package com.example.lectoryape.auth
+﻿package com.example.kajaapp.auth
 import io.github.jan.supabase.createSupabaseClient
 import io.github.jan.supabase.gotrue.Auth
 import io.github.jan.supabase.gotrue.auth
 import io.github.jan.supabase.postgrest.Postgrest
-import com.example.lectoryape.BuildConfig // <-- Importante
+import com.example.kajaapp.BuildConfig // <-- Importante
 
 object SupabaseManager {
     val client = createSupabaseClient(

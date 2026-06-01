@@ -1,4 +1,4 @@
-package com.example.lectoryape.models
+﻿package com.example.kajaapp.models
 
 data class TesisInvitationUiModel(
     val code: String,

@@ -1,7 +1,7 @@
-package com.example.lectoryape.tesis
+﻿package com.example.kajaapp.tesis
 
 import android.content.Context
-import com.example.lectoryape.repository.FakeTesisRepository
+import com.example.kajaapp.repository.FakeTesisRepository
 
 object TesisDemoPrefs {
     private const val PREFS_NAME = "tesis_demo_prefs"

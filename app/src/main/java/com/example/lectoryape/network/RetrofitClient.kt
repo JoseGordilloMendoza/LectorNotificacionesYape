@@ -1,13 +1,13 @@
-package com.example.lectoryape.network
+﻿package com.example.kajaapp.network
 
-import com.example.lectoryape.BuildConfig
+import com.example.kajaapp.BuildConfig
 import okhttp3.OkHttpClient
 import okhttp3.Interceptor
 import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import java.util.concurrent.TimeUnit
-import com.example.lectoryape.auth.SupabaseManager
+import com.example.kajaapp.auth.SupabaseManager
 
 object RetrofitClient {
     private const val BASE_URL = BuildConfig.BACKEND_URL

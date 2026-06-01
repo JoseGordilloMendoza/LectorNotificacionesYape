@@ -1,4 +1,4 @@
-package com.example.lectoryape.auth
+﻿package com.example.kajaapp.auth
 
 import android.accounts.Account
 import android.accounts.AccountManager

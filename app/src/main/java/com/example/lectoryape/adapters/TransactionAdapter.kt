@@ -1,4 +1,4 @@
-package com.example.lectoryape.adapters
+﻿package com.example.kajaapp.adapters
 
 import android.view.LayoutInflater
 import android.view.View
@@ -7,8 +7,8 @@ import android.widget.ImageView
 import android.widget.TextView
 import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.RecyclerView
-import com.example.lectoryape.R
-import com.example.lectoryape.models.YapeNotificationRaw
+import com.example.kajaapp.R
+import com.example.kajaapp.models.YapeNotificationRaw
 
 class TransactionAdapter : RecyclerView.Adapter<TransactionAdapter.TransactionViewHolder>() {
 

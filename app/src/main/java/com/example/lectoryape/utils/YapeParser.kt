@@ -1,6 +1,6 @@
-package com.example.lectoryape.utils
+﻿package com.example.kajaapp.utils
 
-import com.example.lectoryape.models.YapeNotificationRaw
+import com.example.kajaapp.models.YapeNotificationRaw
 import android.service.notification.StatusBarNotification
 import android.util.Log
 
@@ -40,22 +40,20 @@ object YapeParser {
         // 2. Intentar Regex Bancos (BCP, PLIN, etc.)
         matchResult = BANK_REGEX.find(textToParse)
         if (matchResult != null) {
-            // Es un Yape de Banco (Sin código)
             val (n, m) = matchResult.destructured
             Log.d("YapeParser", "✅ Encontrado patrón Banco (BCP/PLIN)")
-            return procesarYape(sbn, title, n, m, "SIN_CODIGO", "YAPE")
+            return procesarYape(sbn, title, n, m, "", "YAPE")
         }
 
         // 3. Intentar Regex Plin (Interbank)
         matchResult = PLIN_REGEX.find(textToParse)
         if (matchResult != null) {
             val (n, m) = matchResult.destructured
-            // Ajuste: Si el título es "Interbank", quizás queramos conservarlo o poner "Plin"
             if (title.equals("Interbank", ignoreCase = true)) {
                 title = "Plin"
             }
             Log.d("YapeParser", "✅ Encontrado patrón Plin")
-            return procesarYape(sbn, title, n, m, "SIN_CODIGO", "PLIN")
+            return procesarYape(sbn, title, n, m, "", "PLIN")
         } 
             
         Log.e("YapeParser", "❌ FALLÓ EL REGEX. No coincide con ningún patrón conocido.")

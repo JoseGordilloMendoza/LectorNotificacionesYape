@@ -1,10 +1,10 @@
-package com.example.lectoryape.network
+﻿package com.example.kajaapp.network
 
-import com.example.lectoryape.network.models.BootstrapResponse
-import com.example.lectoryape.network.models.DeviceRegistrationRequest
-import com.example.lectoryape.network.models.DeviceRegistrationResponse
-import com.example.lectoryape.network.models.HeartbeatPayload
-import com.example.lectoryape.network.models.NotificationPayload
+import com.example.kajaapp.network.models.BootstrapResponse
+import com.example.kajaapp.network.models.DeviceRegistrationRequest
+import com.example.kajaapp.network.models.DeviceRegistrationResponse
+import com.example.kajaapp.network.models.HeartbeatPayload
+import com.example.kajaapp.network.models.NotificationPayload
 import okhttp3.ResponseBody
 import retrofit2.Response
 import retrofit2.http.Body
@@ -26,5 +26,5 @@ interface BackendApi {
     suspend fun sendHeartbeat(@Body payload: HeartbeatPayload): Response<ResponseBody>
 
     @GET("api/v1/subscriptions/current/")
-    suspend fun getCurrentSubscription(): Response<com.example.lectoryape.network.models.SubscriptionResponse>
+    suspend fun getCurrentSubscription(): Response<com.example.kajaapp.network.models.SubscriptionResponse>
 }

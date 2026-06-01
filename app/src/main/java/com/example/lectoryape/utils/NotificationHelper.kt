@@ -1,4 +1,4 @@
-package com.example.lectoryape.utils
+﻿package com.example.kajaapp.utils
 
 import android.app.Notification
 import android.app.NotificationChannel
@@ -8,8 +8,8 @@ import android.content.Context
 import android.content.Intent
 import android.os.Build
 import androidx.core.app.NotificationCompat
-import com.example.lectoryape.MainActivity
-import com.example.lectoryape.R
+import com.example.kajaapp.MainActivity
+import com.example.kajaapp.R
 
 /**
  * Helper class para manejar notificaciones del foreground service
@@ -19,8 +19,8 @@ class NotificationHelper(private val context: Context) {
     companion object {
         const val CHANNEL_ID = "yape_listener_channel"
         const val NOTIFICATION_ID = 1001
-        private const val CHANNEL_NAME = "Lector de Yapeos"
-        private const val CHANNEL_DESCRIPTION = "Notificación persistente mientras escucha yapeos"
+        private const val CHANNEL_NAME = "KAJA POS"
+        private const val CHANNEL_DESCRIPTION = "Servicio activo escuchando pagos de Yape y Plin"
     }
     
     private val notificationManager: NotificationManager by lazy {
@@ -64,8 +64,8 @@ class NotificationHelper(private val context: Context) {
         )
         
         return NotificationCompat.Builder(context, CHANNEL_ID)
-            .setContentTitle("Lector de yapeos activo")
-            .setContentText("La app está escuchando notificaciones de Yape")
+            .setContentTitle("KAJA activo")
+            .setContentText("Escuchando pagos de Yape y Plin")
             .setSmallIcon(R.drawable.ic_notification)
             .setContentIntent(pendingIntent)
             .setOngoing(true) // No se puede descartar manualmente

@@ -1,4 +1,4 @@
-package com.example.lectoryape.utils
+﻿package com.example.kajaapp.utils
 
 import android.content.Context
 import android.os.Build

@@ -1,12 +1,12 @@
-package com.example.lectoryape.tesis
+﻿package com.example.kajaapp.tesis
 
 import android.os.Bundle
 import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
-import com.example.lectoryape.R
-import com.example.lectoryape.repository.FakeTesisRepository
+import com.example.kajaapp.R
+import com.example.kajaapp.repository.FakeTesisRepository
 import com.google.android.material.button.MaterialButton
 
 class TesisShiftActivity : AppCompatActivity() {

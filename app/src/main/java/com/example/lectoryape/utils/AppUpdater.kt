@@ -1,4 +1,4 @@
-package com.example.lectoryape.utils
+﻿package com.example.kajaapp.utils
 
 import android.app.DownloadManager
 import android.content.BroadcastReceiver
@@ -13,7 +13,7 @@ import android.view.View
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.isVisible
-import com.example.lectoryape.R
+import com.example.kajaapp.R
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -37,7 +37,7 @@ class AppUpdater(private val activity: AppCompatActivity) {
         private const val TAG = "AppUpdater"
         private const val FIRESTORE_COLLECTION = "app_config"
         private const val FIRESTORE_DOCUMENT = "version"
-        private const val APK_FILENAME = "lector_yape_update.apk"
+        private const val APK_FILENAME = "kajaapp_update.apk"
     }
 
     private var downloadId: Long = -1L
@@ -53,10 +53,10 @@ class AppUpdater(private val activity: AppCompatActivity) {
                 Log.d(TAG, "🔍 Verificando actualizaciones disponibles...")
                 val versionInfo = fetchVersionInfo() ?: return@launch
 
-                val latestCode = (versionInfo["latestVersionCode"] as? Long)?.toInt() ?: return@launch
-                val currentCode = getCurrentVersionCode()
+                val latestCode  = (versionInfo["latestVersionCode"] as? Long) ?: return@launch
+                val currentCode = (versionInfo["localVersionCode"]  as? Long) ?: getCurrentVersionCode().toLong()
 
-                Log.d(TAG, "📦 Versión actual: $currentCode | Última disponible: $latestCode")
+                Log.d(TAG, "Versión actual: $currentCode | Última disponible: $latestCode")
 
                 if (latestCode > currentCode) {
                     val versionName = versionInfo["latestVersionName"] as? String ?: "Nueva versión"
@@ -106,12 +106,37 @@ class AppUpdater(private val activity: AppCompatActivity) {
                 val body = response.body?.string() ?: return@withContext null
                 val json = org.json.JSONObject(body)
 
-                // Tag debe ser "v{versionCode}", ej. "v12"
-                val tagName = json.getString("tag_name")
-                val versionCode = tagName.removePrefix("v").toLongOrNull()
-                if (versionCode == null) {
-                    Log.w(TAG, "Tag '$tagName' no tiene el formato esperado v{número}")
-                    return@withContext null
+                val tagName   = json.getString("tag_name")          // ej. "v12" o "v1.8"
+                val tagNumber = tagName.removePrefix("v")            // ej. "12"  o "1.8"
+
+                // Convierte el tag a un Long comparable contra versionCode.
+                // - Tag entero (v12)   → usa directamente como versionCode
+                // - Tag semver (v1.8)  → convierte a mayor*1000+menor (ej. 1008)
+                //   y compara contra el versionName instalado convertido igual.
+                val isSemver   = tagNumber.contains(".")
+                val versionCode: Long
+                val compareBase: Long   // base contra la que comparar (versionCode local o semver local)
+
+                if (isSemver) {
+                    val parts  = tagNumber.split(".")
+                    val major  = parts.getOrNull(0)?.toLongOrNull() ?: run {
+                        Log.w(TAG, "No se pudo parsear tag semver '$tagName'"); return@withContext null
+                    }
+                    val minor  = parts.getOrNull(1)?.toLongOrNull() ?: 0L
+                    versionCode = major * 1000L + minor
+
+                    val localName  = getCurrentVersionName()   // ej. "2.1"
+                    val localParts = localName.split(".")
+                    val localMajor = localParts.getOrNull(0)?.toLongOrNull() ?: 0L
+                    val localMinor = localParts.getOrNull(1)?.toLongOrNull() ?: 0L
+                    compareBase = localMajor * 1000L + localMinor
+                    Log.d(TAG, "Tag semver $tagName → $versionCode  |  local $localName → $compareBase")
+                } else {
+                    versionCode = tagNumber.toLongOrNull() ?: run {
+                        Log.w(TAG, "Tag '$tagName' no es entero ni semver válido"); return@withContext null
+                    }
+                    compareBase = getCurrentVersionCode().toLong()
+                    Log.d(TAG, "Tag entero $tagName → $versionCode  |  local versionCode → $compareBase")
                 }
 
                 val releaseName  = json.optString("name", "Nueva versión")
@@ -135,11 +160,13 @@ class AppUpdater(private val activity: AppCompatActivity) {
 
                 Log.d(TAG, "Release encontrado: $tagName ($releaseName) → $downloadUrl")
                 mapOf(
-                    "latestVersionCode" to versionCode,
-                    "latestVersionName" to releaseName,
-                    "downloadUrl"       to downloadUrl,
-                    "releaseNotes"      to releaseNotes,
-                    "isForceUpdate"     to false
+                    "latestVersionCode"  to versionCode,
+                    "localVersionCode"   to compareBase,
+                    "latestVersionName"  to releaseName,
+                    "latestTagNumber"    to tagNumber,      // "1.8" o "12" — sin la "v"
+                    "downloadUrl"        to downloadUrl,
+                    "releaseNotes"       to releaseNotes,
+                    "isForceUpdate"      to false
                 )
             } catch (e: Exception) {
                 Log.e(TAG, "Error consultando GitHub releases: ${e.message}")
@@ -233,6 +260,7 @@ class AppUpdater(private val activity: AppCompatActivity) {
 
             withContext(Dispatchers.Main) {
                 // Referencias a las vistas del layout ya presentes en activity
+                val pbLoading      = activity.findViewById<android.widget.ProgressBar>(R.id.pbDialogLoading)
                 val tvStatus       = activity.findViewById<android.widget.TextView>(R.id.tvDialogStatus)
                 val tvCurrentVer   = activity.findViewById<android.widget.TextView>(R.id.tvDialogCurrentVersion)
                 val tvCurrentBuild = activity.findViewById<android.widget.TextView>(R.id.tvDialogCurrentBuild)
@@ -241,6 +269,9 @@ class AppUpdater(private val activity: AppCompatActivity) {
                 val tvNotes        = activity.findViewById<android.widget.TextView>(R.id.tvDialogReleaseNotes)
                 val btnAction      = activity.findViewById<com.google.android.material.button.MaterialButton>(R.id.btnDialogAction)
                 val btnDismiss     = activity.findViewById<com.google.android.material.button.MaterialButton>(R.id.btnDialogDismiss)
+
+                // Ocultar spinner al recibir respuesta
+                pbLoading?.visibility = android.view.View.GONE
 
                 val currentCode = getCurrentVersionCode()
                 val currentName = getCurrentVersionName()
@@ -251,7 +282,7 @@ class AppUpdater(private val activity: AppCompatActivity) {
 
                 if (versionInfo == null) {
                     // Sin conexión: mostrar solo versión local
-                    tvStatus.text       = "⚠️ Sin conexión a internet"
+                    tvStatus.text       = "Sin conexión a internet"
                     tvLatestVer.text    = "—"
                     tvLatestBuild.text  = "—"
                     tvNotes.text        = "No se pudo obtener información de actualizaciones."
@@ -259,31 +290,31 @@ class AppUpdater(private val activity: AppCompatActivity) {
                     return@withContext
                 }
 
-                val latestCode   = (versionInfo["latestVersionCode"] as? Long)?.toInt() ?: 0
+                val latestCode   = (versionInfo["latestVersionCode"] as? Long) ?: 0L
+                val compareBase  = (versionInfo["localVersionCode"]  as? Long) ?: currentCode.toLong()
                 val latestName   = versionInfo["latestVersionName"] as? String ?: "—"
+                val latestTag    = versionInfo["latestTagNumber"]    as? String ?: latestName.removePrefix("v")
                 val downloadUrl  = versionInfo["downloadUrl"] as? String ?: ""
                 val releaseNotes = versionInfo["releaseNotes"] as? String ?: "Sin notas disponibles."
-                val isUpToDate   = currentCode >= latestCode
+                val isUpToDate   = compareBase >= latestCode
 
-                // Rellenar versión de Firestore
-                tvLatestVer.text    = "v$latestName"
-                tvLatestBuild.text  = "build $latestCode"
+                tvLatestVer.text    = "v$latestTag"
+                tvLatestBuild.text  = latestName
                 tvNotes.text        = releaseNotes
 
                 if (isUpToDate) {
-                    tvStatus.text  = "✅ Tienes la versión más reciente"
+                    tvStatus.text = "Tienes la versión más reciente"
+                    tvLatestVer.setTextColor(androidx.core.content.ContextCompat.getColor(activity, R.color.kaja_teal_dark))
                     btnAction.visibility = android.view.View.GONE
-                    // btnDismiss permanece GONE
                 } else {
-                    tvStatus.text  = "🔴 Hay una nueva versión disponible"
-                    btnAction.text = "⬇  Instalar v$latestName"
-                    btnDismiss.visibility = android.view.View.VISIBLE
-
+                    tvStatus.text = "Hay una nueva versión disponible"
+                    tvLatestVer.setTextColor(androidx.core.content.ContextCompat.getColor(activity, R.color.kaja_coral))
+                    btnAction.text = "Instalar v$latestName"
                     btnAction.visibility = android.view.View.VISIBLE
+                    btnDismiss.visibility = android.view.View.VISIBLE
                     btnAction.setOnClickListener {
                         startDownload(downloadUrl)
                     }
-                    // btnDismiss is unused in screen mode actually
                 }
 
                 Log.d(TAG, "ℹ️ Pantalla de actualizaciones refrescada (upToDate=$isUpToDate)")

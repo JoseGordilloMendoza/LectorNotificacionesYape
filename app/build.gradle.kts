@@ -9,15 +9,15 @@ plugins {
 }
 
 android {
-    namespace = "com.example.lectoryape"
+    namespace = "com.example.kajaapp"
     compileSdk = 36
 
     defaultConfig {
-        applicationId = "com.example.lectoryape"
+        applicationId = "com.example.kajaapp"
         minSdk = 24
         targetSdk = 36
-        versionCode = 11
-        versionName = "2.1"
+        versionCode = 14
+        versionName = "2.4"
         
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 

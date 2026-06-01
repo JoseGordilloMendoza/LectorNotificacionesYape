@@ -1,4 +1,4 @@
-package com.example.lectoryape.network.models
+﻿package com.example.kajaapp.network.models
 
 import com.google.gson.annotations.SerializedName
 

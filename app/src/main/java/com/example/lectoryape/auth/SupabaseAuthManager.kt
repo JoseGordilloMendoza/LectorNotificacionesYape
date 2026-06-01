@@ -1,4 +1,4 @@
-package com.example.lectoryape.auth
+﻿package com.example.kajaapp.auth
 
 import io.github.jan.supabase.gotrue.providers.builtin.Email
 import io.github.jan.supabase.gotrue.providers.builtin.IDToken

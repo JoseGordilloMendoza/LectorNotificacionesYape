@@ -1,4 +1,4 @@
-package com.example.lectoryape.models
+﻿package com.example.kajaapp.models
 
 import kotlinx.serialization.Serializable
 

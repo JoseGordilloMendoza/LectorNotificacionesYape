@@ -2,7 +2,13 @@
   "permissions": {
     "allow": [
       "Bash(Get-ChildItem -Path \"C:\\\\Users\\\\Admin\\\\AndroidStudioProjects\\\\lectorYape\" -Force)",
-      "Bash(Select-Object Name, FullName)"
+      "Bash(Select-Object Name, FullName)",
+      "Bash(dir \"C:\\\\androidKEYS\" /B)",
+      "Read(//c/androidKEYS/**)",
+      "Bash(curl -s \"https://api.github.com/repos/JoseGordilloMendoza/LectorNotificacionesYape/releases/latest\")",
+      "Bash(python -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\('tag:', d.get\\('tag_name'\\)\\); assets=d.get\\('assets',[]\\); print\\('assets:', [\\(a['name'],a['browser_download_url']\\) for a in assets]\\)\")",
+      "Bash(find /c/Users/Admin/Documents/KAJA -type f -name \"*.js\" -o -name \"*.ts\" -o -name \"*.tsx\" -o -name \"*.vue\" 2>/dev/null | head -30)",
+      "Read(//c/Users/Admin/Documents/KAJA/**)"
     ]
   }
 }

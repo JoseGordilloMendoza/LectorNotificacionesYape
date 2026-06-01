@@ -1,4 +1,4 @@
-package com.example.lectoryape.tesis
+﻿package com.example.kajaapp.tesis
 
 import android.os.Bundle
 import android.widget.TextView
@@ -6,9 +6,9 @@ import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import com.example.lectoryape.R
-import com.example.lectoryape.adapters.TesisTransactionAdapter
-import com.example.lectoryape.repository.FakeTesisRepository
+import com.example.kajaapp.R
+import com.example.kajaapp.adapters.TesisTransactionAdapter
+import com.example.kajaapp.repository.FakeTesisRepository
 
 class TesisQueueActivity : AppCompatActivity() {
 
@@ -107,7 +107,7 @@ class TesisQueueActivity : AppCompatActivity() {
         }
     }
 
-    private fun bindRecycler(recyclerId: Int, items: List<com.example.lectoryape.models.TesisTransactionUiModel>) {
+    private fun bindRecycler(recyclerId: Int, items: List<com.example.kajaapp.models.TesisTransactionUiModel>) {
         val recycler = findViewById<RecyclerView>(recyclerId)
         recycler.layoutManager = LinearLayoutManager(this)
         recycler.adapter = TesisTransactionAdapter().apply {
