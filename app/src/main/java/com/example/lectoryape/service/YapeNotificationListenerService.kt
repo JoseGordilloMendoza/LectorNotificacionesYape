@@ -11,9 +11,7 @@ import android.os.PowerManager
 import android.service.notification.NotificationListenerService
 import android.service.notification.StatusBarNotification
 import android.util.Log
-import com.example.kajaapp.auth.SupabaseAuthManager
 import com.example.kajaapp.network.RetrofitClient
-import com.example.kajaapp.network.models.NotificationPayload
 import com.example.kajaapp.models.YapeNotificationRaw
 import com.example.kajaapp.storage.YapeNotificationStorage
 import com.example.kajaapp.utils.NotificationHelper
@@ -28,7 +26,6 @@ import kotlinx.coroutines.launch
 class YapeNotificationListenerService : NotificationListenerService() {
     // se usa para seguridad con posibles problemas de arranque
     private val storage by lazy { YapeNotificationStorage(applicationContext) }
-    private val supabaseAuthManager by lazy { SupabaseAuthManager() }
     private val notificationHelper by lazy { NotificationHelper(applicationContext) }
     
     //hash / set :V para evitar duplicados
@@ -167,29 +164,29 @@ class YapeNotificationListenerService : NotificationListenerService() {
                 sendBroadcast(intent)
             }
 
-            // Subir al backend Django
+            // Subir al backend Django (autenticado por device_id, sin JWT)
             serviceScope.launch {
-                ensureFreshToken()
                 try {
-                    val tenantId = applicationContext.getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
-                        .getString("tenant_id", "")
-                    if (tenantId.isNullOrEmpty() || tenantId == "null") {
-                        Log.w(TAG, "⚠️ tenantId no configurado o es 'null' — pago no enviado al backend")
+                    val deviceId = applicationContext.getSharedPreferences("yape_listener_prefs", Context.MODE_PRIVATE)
+                        .getString("device_id", "") ?: ""
+                    if (deviceId.isBlank()) {
+                        Log.w(TAG, "deviceId no configurado — pago no enviado al backend")
                         return@launch
                     }
                     val rawJson = sbn.notification.extras.getString("android.text") ?: ""
-                    val payload = NotificationPayload(
-                        tenant = tenantId,
-                        branch = null,
+                    val payload = com.example.kajaapp.network.models.DeviceNotificationPayload(
+                        deviceId = deviceId,
                         amount = yapePlinPayment.amount,
                         sender_name = yapePlinPayment.name,
                         reference_code = yapePlinPayment.securityCode,
                         wallet_type = yapePlinPayment.walletType,
                         raw_payload = mapOf("text" to rawJson)
                     )
-                    val response = RetrofitClient.api.sendNotification(payload)
+                    val response = RetrofitClient.api.sendNotificationFromDevice(payload)
                     if (response.isSuccessful) {
                         Log.i(TAG, "✅ Enviado al backend: ${yapePlinPayment.name} S/${"%.2f".format(yapePlinPayment.amount)}")
+                    } else if (response.code() == 409) {
+                        Log.d(TAG, "⚠️ Notificación duplicada ignorada (code: ${yapePlinPayment.securityCode})")
                     } else {
                         Log.e(TAG, "❌ Error backend ${response.code()}: ${response.errorBody()?.string()}")
                     }
@@ -335,8 +332,8 @@ class YapeNotificationListenerService : NotificationListenerService() {
             // Envío inmediato al arrancar — el backend sabe que el dispositivo está online
             sendHeartbeatNow()
             while (isActive) {
-                // Esperar 6 minutos antes del siguiente latido
-                kotlinx.coroutines.delay(6 * 60 * 1000L)
+                // Esperar 4 minutos antes del siguiente latido
+                kotlinx.coroutines.delay(4 * 60 * 1000L)
                 sendHeartbeatNow()
                 // Renovar wake lock en cada ciclo (timeout configurado en 20 min)
                 acquireWakeLock()
@@ -398,8 +395,15 @@ class YapeNotificationListenerService : NotificationListenerService() {
                 deviceId = deviceId,
                 timestamp = System.currentTimeMillis()
             )
-            RetrofitClient.api.sendHeartbeat(payload)
-            Log.d(TAG, "💓 Heartbeat enviado (device: $deviceId)")
+            val hbResponse = RetrofitClient.api.sendHeartbeat(payload)
+            if (hbResponse.code() == 404) {
+                // El device no existe en la BD (ej. BD limpiada) — forzar re-registro al próximo inicio
+                applicationContext.getSharedPreferences("yape_listener_prefs", Context.MODE_PRIVATE)
+                    .edit().putBoolean("is_device_registered", false).apply()
+                Log.w(TAG, "💓 Device no encontrado en backend — se re-registrará al próximo inicio")
+            } else {
+                Log.d(TAG, "💓 Heartbeat enviado (device: $deviceId)")
+            }
         } catch (e: Exception) {
             Log.e(TAG, "Error al enviar heartbeat: ${e.message}")
         }
@@ -412,7 +416,7 @@ class YapeNotificationListenerService : NotificationListenerService() {
     }
     
     // wake lock para mantener el CPU activo
-    // Timeout de 20 minutos: el heartbeat (cada 15 min) lo renueva antes que expire
+    // Timeout de 10 minutos: el heartbeat (cada 4 min) lo renueva antes que expire
     private fun acquireWakeLock() {
         try {
             if (wakeLock == null) {
@@ -424,7 +428,7 @@ class YapeNotificationListenerService : NotificationListenerService() {
                 wakeLock?.setReferenceCounted(false)
             }
             if (wakeLock?.isHeld == false) {
-                wakeLock?.acquire(20 * 60 * 1000L) // 20 minutos — renovado por heartbeat cada 15
+                wakeLock?.acquire(10 * 60 * 1000L) // 10 minutos — renovado por heartbeat cada 4
                 Log.d(TAG, "Wake lock adquirido (timeout: 20min)")
             }
         } catch (e: Exception) {

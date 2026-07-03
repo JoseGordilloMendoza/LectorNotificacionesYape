@@ -16,6 +16,8 @@ import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.gms.auth.api.signin.GoogleSignInClient
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions
 import com.google.android.gms.common.api.ApiException
+import io.github.jan.supabase.gotrue.SessionStatus
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
 class LoginActivity : AppCompatActivity() {
@@ -48,12 +50,6 @@ class LoginActivity : AppCompatActivity() {
             .build()
         googleSignInClient = GoogleSignIn.getClient(this, gso)
 
-        if (supabaseAuthManager.isUserSignedIn()) {
-            Log.d(TAG, "Usuario ya logueado en Supabase")
-            navigateToMain()
-            return
-        }
-
         // Always POS mode
         getSharedPreferences("app_prefs", android.content.Context.MODE_PRIVATE)
             .edit().putString(PREF_APP_MODE, MODE_POS).apply()
@@ -62,6 +58,20 @@ class LoginActivity : AppCompatActivity() {
             showLoading(true)
             val signInIntent = googleSignInClient.signInIntent
             startActivityForResult(signInIntent, RC_SIGN_IN)
+        }
+
+        // Esperar a que Supabase cargue la sesión del almacenamiento (async)
+        // Si se llama currentSessionOrNull() de forma síncrona aquí, siempre
+        // devuelve null porque la carga del disco aún no terminó.
+        lifecycleScope.launch {
+            val status = SupabaseManager.auth.sessionStatus
+                .first { it !is SessionStatus.LoadingFromStorage }
+
+            if (status is SessionStatus.Authenticated) {
+                Log.d(TAG, "Sesión restaurada desde almacenamiento — saltando login")
+                navigateToMain()
+            }
+            // Si no es Authenticated, la pantalla ya está visible con el botón habilitado
         }
     }
 

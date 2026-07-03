@@ -811,8 +811,15 @@ class MainActivity : AppCompatActivity() {
                     deviceId = deviceId,
                     timestamp = System.currentTimeMillis()
                 )
-                com.example.kajaapp.network.RetrofitClient.api.sendHeartbeat(payload)
-                android.util.Log.d("MainActivity", "💓 Heartbeat de inicio enviado")
+                val response = com.example.kajaapp.network.RetrofitClient.api.sendHeartbeat(payload)
+                if (response.code() == 404) {
+                    // Device borrado de la BD (ej. BD limpiada) — re-registrar ahora mismo
+                    android.util.Log.w("MainActivity", "💓 Device no encontrado — re-registrando...")
+                    prefs.edit().putBoolean("is_device_registered", false).apply()
+                    setupDeviceRegistration()
+                } else {
+                    android.util.Log.d("MainActivity", "💓 Heartbeat de inicio enviado")
+                }
             } catch (e: Exception) {
                 android.util.Log.w("MainActivity", "Heartbeat de inicio fallido: ${e.message}")
             }

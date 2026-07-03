@@ -1,6 +1,7 @@
 ﻿package com.example.kajaapp.network
 
 import com.example.kajaapp.network.models.BootstrapResponse
+import com.example.kajaapp.network.models.DeviceNotificationPayload
 import com.example.kajaapp.network.models.DeviceRegistrationRequest
 import com.example.kajaapp.network.models.DeviceRegistrationResponse
 import com.example.kajaapp.network.models.HeartbeatPayload
@@ -21,6 +22,9 @@ interface BackendApi {
 
     @POST("api/v1/notifications/")
     suspend fun sendNotification(@Body payload: NotificationPayload): Response<ResponseBody>
+
+    @POST("api/v1/notifications/from-device/")
+    suspend fun sendNotificationFromDevice(@Body payload: DeviceNotificationPayload): Response<ResponseBody>
 
     @POST("api/v1/devices/heartbeat/")
     suspend fun sendHeartbeat(@Body payload: HeartbeatPayload): Response<ResponseBody>
