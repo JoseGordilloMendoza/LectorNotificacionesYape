@@ -22,12 +22,15 @@ import androidx.core.view.isVisible
 import androidx.lifecycle.lifecycleScope
 
 import com.example.kajaapp.auth.SupabaseAuthManager
+import com.example.kajaapp.auth.SupabaseManager
 import com.example.kajaapp.databinding.ActivityMainBinding
 import com.example.kajaapp.service.YapeNotificationListenerService
 import com.example.kajaapp.storage.YapeNotificationStorage
 import java.io.File
 import java.util.Locale
+import io.github.jan.supabase.gotrue.SessionStatus
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 // Coil - carga de imágenes (foto de perfil Google)
@@ -66,26 +69,29 @@ class MainActivity : AppCompatActivity() {
         // modo claro, al pepo se le distorsiona xd
         AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO)
 
-        // Verificar Login
         supabaseAuthManager = SupabaseAuthManager()
-        
-        if (!supabaseAuthManager.isUserSignedIn()) {
-            navigateToLogin()
-            return
+
+        // Esperar a que Supabase cargue la sesión desde disco (async) antes de decidir
+        lifecycleScope.launch {
+            val status = SupabaseManager.auth.sessionStatus
+                .first { it !is SessionStatus.LoadingFromStorage }
+
+            if (status !is SessionStatus.Authenticated) {
+                navigateToLogin()
+                return@launch
+            }
+
+            binding = ActivityMainBinding.inflate(layoutInflater)
+            setContentView(binding.root)
+
+            val toolbar = findViewById<com.google.android.material.appbar.MaterialToolbar>(R.id.toolbar)
+            setSupportActionBar(toolbar)
+
+            storage = YapeNotificationStorage(this@MainActivity)
+            appUpdater = com.example.kajaapp.utils.AppUpdater(this@MainActivity)
+
+            checkSubscription()
         }
-
-        binding = ActivityMainBinding.inflate(layoutInflater)
-        setContentView(binding.root)
-
-        // Configurar Toolbar como ActionBar
-        val toolbar = findViewById<com.google.android.material.appbar.MaterialToolbar>(R.id.toolbar)
-        setSupportActionBar(toolbar)
-
-        storage = YapeNotificationStorage(this)
-        appUpdater = com.example.kajaapp.utils.AppUpdater(this)
-
-        // Verificar suscripción ANTES de inicializar la app
-        checkSubscription()
     }
 
     /* Verificacion de suscripcion de user
@@ -401,6 +407,14 @@ class MainActivity : AppCompatActivity() {
     private fun performLogout() {
         lifecycleScope.launch {
             try {
+                // Apagar el servicio de notificaciones antes de cerrar sesión
+                prefs.edit()
+                    .putBoolean(YapeNotificationListenerService.PREF_SHOW_NOTIFICATION, false)
+                    .apply()
+                val stopIntent = Intent(YapeNotificationListenerService.ACTION_TOGGLE_NOTIFICATION)
+                stopIntent.setPackage(packageName)
+                sendBroadcast(stopIntent)
+
                 supabaseAuthManager.signOut()
                 Toast.makeText(this@MainActivity, "Sesión cerrada", Toast.LENGTH_SHORT).show()
                 navigateToLogin()
@@ -423,6 +437,9 @@ class MainActivity : AppCompatActivity() {
         // Registrar el receiver para escuchar broadcasts
         val filter = IntentFilter(YapeNotificationListenerService.ACTION_NOTIFICATION_SAVED)
         registerReceiver(notificationReceiver, filter, RECEIVER_NOT_EXPORTED)
+
+        // Guardar si binding no está listo aún (coroutine de sesión no terminó)
+        if (!::binding.isInitialized) return
 
         // Verificar permiso cada vez que la app regresa al foreground
         checkNotificationPermission()
