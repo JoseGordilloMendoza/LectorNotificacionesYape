@@ -8,7 +8,9 @@
       "Bash(curl -s \"https://api.github.com/repos/JoseGordilloMendoza/LectorNotificacionesYape/releases/latest\")",
       "Bash(python -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\('tag:', d.get\\('tag_name'\\)\\); assets=d.get\\('assets',[]\\); print\\('assets:', [\\(a['name'],a['browser_download_url']\\) for a in assets]\\)\")",
       "Bash(find /c/Users/Admin/Documents/KAJA -type f -name \"*.js\" -o -name \"*.ts\" -o -name \"*.tsx\" -o -name \"*.vue\" 2>/dev/null | head -30)",
-      "Read(//c/Users/Admin/Documents/KAJA/**)"
+      "Read(//c/Users/Admin/Documents/KAJA/**)",
+      "Bash(git commit -m ' *)",
+      "Bash(git push *)"
     ]
   }
 }
