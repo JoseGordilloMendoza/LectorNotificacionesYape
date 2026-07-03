@@ -1,4 +1,4 @@
-package com.example.lectoryape.models
+﻿package com.example.kajaapp.models
 
 /**
  * notificación de Yape o plin capturada en su formato crudo
@@ -20,7 +20,7 @@ data class YapeNotificationRaw(
 ) {
     // csv, solo para local
     fun toCsvLine(): String {
-        val fechaLegible = com.example.lectoryape.utils.DateFormatter.formatTimestamp(timestamp)
+        val fechaLegible = com.example.kajaapp.utils.DateFormatter.formatTimestamp(timestamp)
         return buildString {
             append(fechaLegible)
             append(",")

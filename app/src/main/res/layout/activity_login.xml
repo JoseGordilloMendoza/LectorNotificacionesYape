@@ -1,98 +1,127 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical"
-    android:gravity="center"
-    android:padding="32dp"
-    android:background="@color/white">
+    android:background="@drawable/bg_hero_polygon">
 
-    <!-- Logo/Icono -->
-    <ImageView
-        android:layout_width="600dp"
+    <!-- HERO: Logo + tagline centrado en la mitad superior -->
+    <LinearLayout
+        android:id="@+id/layoutHero"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:adjustViewBounds="true"
-        android:scaleType="fitCenter"
-        android:src="@drawable/kaja"
-        android:layout_marginBottom="24dp"
-        android:contentDescription="Logo KAJA"/>
-
-    <!-- Título -->
-    
-
-    <!-- Subtítulo con letterSpacing (idea #5) -->
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="SINCRONIZA TUS REGISTROS"
-        android:textSize="12sp"
-        android:textColor="@color/kaja_blue_pale"
+        android:orientation="vertical"
         android:gravity="center"
-        android:letterSpacing="0.15"
-        android:layout_marginBottom="32dp"/>
+        android:layout_centerInParent="true"
+        android:layout_above="@+id/layoutCard"
+        android:paddingBottom="24dp"
+        android:paddingStart="32dp"
+        android:paddingEnd="32dp">
 
-    <!-- Descripción -->
-    <TextView
+        <ImageView
+            android:layout_width="180dp"
+            android:layout_height="wrap_content"
+            android:adjustViewBounds="true"
+            android:scaleType="fitCenter"
+            android:src="@drawable/kaja"
+            android:contentDescription="Logo KAJA"/>
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="SINCRONIZA TUS REGISTROS"
+            android:textSize="11sp"
+            android:textColor="#CCFFFFFF"
+            android:gravity="center"
+            android:letterSpacing="0.2"
+            android:layout_marginTop="16dp"/>
+    </LinearLayout>
+
+    <!-- CARD INFERIOR: Formulario de login -->
+    <LinearLayout
+        android:id="@+id/layoutCard"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Inicia sesión con tu cuenta de Google para comenzar."
-        android:textSize="15sp"
-        android:textColor="@color/kaja_teal_dark"
-        android:gravity="center"
-        android:layout_marginBottom="32dp"
-        android:lineSpacingExtra="4dp"/>
+        android:orientation="vertical"
+        android:layout_alignParentBottom="true"
+        android:background="@drawable/bg_login_card"
+        android:paddingTop="36dp"
+        android:paddingBottom="40dp"
+        android:paddingStart="32dp"
+        android:paddingEnd="32dp">
 
-    <!-- Separador de circuito KAJA (idea #2) -->
-    <View
-        android:layout_width="match_parent"
-        android:layout_height="12dp"
-        android:background="@drawable/divider_circuit"
-        android:layout_marginBottom="24dp"/>
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Bienvenido"
+            android:textSize="24sp"
+            android:textStyle="bold"
+            android:textColor="@color/kaja_teal_dark"
+            android:layout_marginBottom="8dp"/>
 
-    <!-- Botón de Google Sign-In con gradiente diagonal (idea #6) -->
-    <androidx.appcompat.widget.AppCompatButton
-        android:id="@+id/btnGoogleSignIn"
-        android:layout_width="match_parent"
-        android:layout_height="56dp"
-        android:text="INICIAR SESIÓN CON GOOGLE"
-        android:textSize="14sp"
-        android:textStyle="bold"
-        android:textColor="@color/white"
-        android:letterSpacing="0.05"
-        android:background="@drawable/bg_pill_gradient"
-        android:translationZ="4dp"
-        android:paddingStart="24dp"
-        android:paddingEnd="24dp" />
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Inicia sesión con tu cuenta de Google para comenzar a sincronizar tus pagos."
+            android:textSize="14sp"
+            android:textColor="@color/kaja_teal"
+            android:lineSpacingExtra="4dp"
+            android:layout_marginBottom="32dp"/>
 
-    <!-- Nota de privacidad -->
-    <TextView
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="Al continuar, aceptas la sincronización segura de las alertas bancarias entrantes."
-        android:textSize="12sp"
-        android:textColor="@color/kaja_teal"
-        android:gravity="center"
-        android:layout_marginTop="24dp"
-        android:lineSpacingExtra="2dp"/>
+        <!-- Botón Google Sign-In -->
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnGoogleSignIn"
+            style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+            android:layout_width="match_parent"
+            android:layout_height="54dp"
+            android:text="Iniciar sesión con Google"
+            android:textSize="15sp"
+            android:textColor="@color/kaja_teal_dark"
+            app:icon="@drawable/ic_google"
+            app:iconTint="@null"
+            app:iconSize="20dp"
+            app:iconPadding="12dp"
+            app:strokeColor="@color/kaja_blue_pale"
+            app:strokeWidth="1dp"
+            app:cornerRadius="14dp"/>
 
-    <!-- Estado de carga -->
-    <ProgressBar
-        android:id="@+id/progressBar"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="24dp"
-        android:indeterminateTint="@color/kaja_coral"
-        android:visibility="gone"/>
+        <!-- Estado de carga (junto al botón) -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center"
+            android:layout_marginTop="20dp">
 
-    <TextView
-        android:id="@+id/tvStatus"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Iniciando sesión..."
-        android:textSize="14sp"
-        android:textColor="@color/kaja_teal_dark"
-        android:layout_marginTop="16dp"
-        android:visibility="gone"/>
+            <ProgressBar
+                android:id="@+id/progressBar"
+                android:layout_width="20dp"
+                android:layout_height="20dp"
+                android:indeterminateTint="@color/kaja_coral"
+                android:visibility="gone"/>
 
-</LinearLayout>
+            <TextView
+                android:id="@+id/tvStatus"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Conectando con Supabase..."
+                android:textSize="13sp"
+                android:textColor="@color/kaja_teal_dark"
+                android:layout_marginStart="10dp"
+                android:visibility="gone"/>
+        </LinearLayout>
+
+        <!-- Nota de privacidad -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Al continuar, aceptas la sincronización segura de las alertas bancarias entrantes."
+            android:textSize="11sp"
+            android:textColor="@color/kaja_blue_pale"
+            android:gravity="center"
+            android:layout_marginTop="28dp"
+            android:lineSpacingExtra="2dp"/>
+
+    </LinearLayout>
+
+</RelativeLayout>

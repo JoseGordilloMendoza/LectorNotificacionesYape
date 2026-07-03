@@ -19,6 +19,6 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "lectorYape"
+rootProject.name = "KAJAapp"
 include(":app")
  

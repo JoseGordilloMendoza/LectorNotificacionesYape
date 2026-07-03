@@ -1,4 +1,4 @@
-package com.example.lectoryape
+﻿package com.example.kajaapp
 
 import android.content.BroadcastReceiver
 import android.content.Context
@@ -20,15 +20,17 @@ import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
 import androidx.core.view.isVisible
 import androidx.lifecycle.lifecycleScope
-import androidx.recyclerview.widget.LinearLayoutManager
-import com.example.lectoryape.auth.FirebaseAuthManager
-import com.example.lectoryape.databinding.ActivityMainBinding
-import com.example.lectoryape.firebase.FirebaseUploader
-import com.example.lectoryape.service.YapeNotificationListenerService
-import com.example.lectoryape.storage.YapeNotificationStorage
+
+import com.example.kajaapp.auth.SupabaseAuthManager
+import com.example.kajaapp.auth.SupabaseManager
+import com.example.kajaapp.databinding.ActivityMainBinding
+import com.example.kajaapp.service.YapeNotificationListenerService
+import com.example.kajaapp.storage.YapeNotificationStorage
 import java.io.File
 import java.util.Locale
+import io.github.jan.supabase.gotrue.SessionStatus
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 // Coil - carga de imágenes (foto de perfil Google)
@@ -39,13 +41,17 @@ class MainActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityMainBinding
     private lateinit var storage: YapeNotificationStorage
-    private lateinit var authManager: FirebaseAuthManager
-    private lateinit var firebaseUploader: FirebaseUploader
-    private lateinit var appUpdater: com.example.lectoryape.utils.AppUpdater
+    private lateinit var supabaseAuthManager: SupabaseAuthManager
+    private lateinit var appUpdater: com.example.kajaapp.utils.AppUpdater
+    private lateinit var transactionAdapter: com.example.kajaapp.adapters.TransactionAdapter
     
     // SharedPreferences para guardar la preferencia del switch
     private val prefs by lazy {
         getSharedPreferences("yape_listener_prefs", Context.MODE_PRIVATE)
+    }
+
+    private val modePrefs by lazy {
+        getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
     }
 
     // BroadcastReceiver para escuchar cuando se guardan notificaciones
@@ -63,82 +69,57 @@ class MainActivity : AppCompatActivity() {
         // modo claro, al pepo se le distorsiona xd
         AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO)
 
-        // Verificar Login
-        authManager = FirebaseAuthManager(this)
-        
-        if (!authManager.isSignedIn()) {
-            navigateToLogin()
-            return
+        supabaseAuthManager = SupabaseAuthManager()
+
+        // Esperar a que Supabase cargue la sesión desde disco (async) antes de decidir
+        lifecycleScope.launch {
+            val status = SupabaseManager.auth.sessionStatus
+                .first { it !is SessionStatus.LoadingFromStorage }
+
+            if (status !is SessionStatus.Authenticated) {
+                navigateToLogin()
+                return@launch
+            }
+
+            binding = ActivityMainBinding.inflate(layoutInflater)
+            setContentView(binding.root)
+
+            val toolbar = findViewById<com.google.android.material.appbar.MaterialToolbar>(R.id.toolbar)
+            setSupportActionBar(toolbar)
+
+            storage = YapeNotificationStorage(this@MainActivity)
+            appUpdater = com.example.kajaapp.utils.AppUpdater(this@MainActivity)
+
+            checkSubscription()
         }
-
-        binding = ActivityMainBinding.inflate(layoutInflater)
-        setContentView(binding.root)
-
-        // Configurar Toolbar como ActionBar
-        val toolbar = findViewById<com.google.android.material.appbar.MaterialToolbar>(R.id.toolbar)
-        setSupportActionBar(toolbar)
-
-        storage = YapeNotificationStorage(this)
-        firebaseUploader = FirebaseUploader(this)
-        appUpdater = com.example.lectoryape.utils.AppUpdater(this)
-
-        // Verificar suscripción ANTES de inicializar la app
-        checkSubscription()
     }
 
     /* Verificacion de suscripcion de user
     Si la prueba expiró o está inactiva, muestra un diálogo bloqueante.
      */
     private fun checkSubscription() {
-        val user = authManager.getCurrentUser()
-        if (user == null) {
-            navigateToLogin()
-            return
-        }
-
-        // Mostrar loading mientras verificamos
-        binding.root.alpha = 0.5f
-
-        com.google.firebase.firestore.FirebaseFirestore.getInstance()
-            .collection("users").document(user.uid)
-            .get()
-            .addOnSuccessListener { document ->
-                binding.root.alpha = 1.0f
-
-                if (document != null && document.exists()) {
-                    val subMap = document.get("subscription") as? Map<String, Any>
-                    val isActive = subMap?.get("isActive") as? Boolean ?: false
-                    val status = subMap?.get("status") as? String ?: "expired"
-
-                    if (isActive && status != "expired") {
-                        // ✅ Suscripción válida → Inicializar app
-                        android.util.Log.d("MainActivity", "sub activa: $status")
-                        initializeApp()
-                    } else {
-                        // ❌ Suscripción expirada → Bloquear
-                        android.util.Log.w("MainActivity", "sub expirada: isActive=$isActive, status=$status")
-                        showSubscriptionExpiredDialog()
-                    }
-                } else {
-                    // No tiene documento de usuario → tratar como expirado
-                    showSubscriptionExpiredDialog()
-                }
-            }
-            .addOnFailureListener { e ->
-                binding.root.alpha = 1.0f
-                android.util.Log.e("MainActivity", "Error verificando suscripción: ${e.message}")
-                // En caso de error de red, permitir uso (para no bloquear sin internet)
-                Toast.makeText(this, "⚠️ No se pudo verificar suscripción", Toast.LENGTH_SHORT).show()
-                initializeApp()
-            }
+        // En modo Tesis y Híbrido, saltamos la validación de suscripción local de Firebase por ahora.
+        initializeApp()
     }
 
     private fun initializeApp() {
         setupUI()
 
+        // Configurar RecyclerView
+        transactionAdapter = com.example.kajaapp.adapters.TransactionAdapter()
+        val rvTransactions = findViewById<androidx.recyclerview.widget.RecyclerView>(R.id.rvTransactions)
+        rvTransactions?.adapter = transactionAdapter
+
+        val layoutModePos = findViewById<android.widget.LinearLayout>(R.id.layoutModePos)
+        val layoutModeTesis = findViewById<android.widget.LinearLayout>(R.id.layoutModeTesis)
+
+        layoutModePos?.visibility = android.view.View.VISIBLE
+        layoutModeTesis?.visibility = android.view.View.GONE
+
         checkNotificationPermission()
         updateNotificationCount()
         setupNotificationSwitch()
+        setupKioskModeSwitch()
         
         // Configurar Barra Inferior
         setupBottomNavigation()
@@ -150,6 +131,98 @@ class MainActivity : AppCompatActivity() {
 
         // Verificar si hay una actualización OTA disponible (silencioso, no bloquea la UI)
         appUpdater.checkForUpdates()
+
+        setupDeviceRegistration()
+
+        // Heartbeat al abrir la app — indica al backend que el dispositivo está activo
+        sendStartupHeartbeat()
+    }
+    
+    private fun setupDeviceRegistration() {
+        val deviceId = prefs.getString("device_id", "")
+        if (deviceId.isNullOrEmpty()) {
+            val newId = java.util.UUID.randomUUID().toString()
+            prefs.edit().putString("device_id", newId).apply()
+        }
+
+        val isRegistered = prefs.getBoolean("is_device_registered", false)
+        if (!isRegistered) {
+            lifecycleScope.launch(Dispatchers.IO) {
+                val tenantId = modePrefs.getString("tenant_id", "")
+                if (!tenantId.isNullOrEmpty() && tenantId != "null") {
+                    val deviceName = Build.MODEL
+                    val currentDeviceId = prefs.getString("device_id", "") ?: ""
+                    val req = com.example.kajaapp.network.models.DeviceRegistrationRequest(
+                        tenant = tenantId,
+                        deviceId = currentDeviceId,
+                        name = deviceName
+                    )
+                    try {
+                        val response = com.example.kajaapp.network.RetrofitClient.api.registerDevice(req)
+                        // If 200/201 or if it's 400 (already exists), we mark it as registered to stop spamming
+                        if (response.isSuccessful || response.code() == 400) {
+                            prefs.edit().putBoolean("is_device_registered", true).apply()
+                            android.util.Log.d("MainActivity", "✅ Device registered (or already existed) in backend")
+                        } else {
+                            android.util.Log.e("MainActivity", "❌ Failed to register device: ${response.code()} ${response.errorBody()?.string()}")
+                        }
+                    } catch (e: Exception) {
+                        android.util.Log.e("MainActivity", "Error registering device: ${e.message}")
+                    }
+                }
+            }
+        }
+    }
+
+    private fun shareDailyReport() {
+        lifecycleScope.launch(Dispatchers.IO) {
+            val (count, sum, transactions) = loadLocalTransactions()
+            if (count == 0) {
+                withContext(Dispatchers.Main) {
+                    Toast.makeText(this@MainActivity, "No hay pagos hoy para reportar", Toast.LENGTH_SHORT).show()
+                }
+                return@launch
+            }
+
+            val report = buildString {
+                appendLine("📊 *Reporte de Caja (Modo Tesis)*")
+                val sdf = java.text.SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
+                appendLine("🗓️ Fecha: ${sdf.format(java.util.Date())}")
+                appendLine("💰 *Total Recaudado:* S/ ${"%.2f".format(sum)}")
+                appendLine("📈 *Cantidad:* $count operaciones")
+                appendLine()
+                appendLine("🧾 *Detalle:*")
+                transactions.forEach {
+                    appendLine("• ${it.name} - S/ ${"%.2f".format(it.amount)} (${it.walletType})")
+                }
+                appendLine()
+                appendLine("_Generado automáticamente por KAJA_")
+            }
+
+            withContext(Dispatchers.Main) {
+                shareTextReport(report)
+            }
+        }
+    }
+
+    private fun shareTextReport(report: String) {
+        val sendIntent = Intent().apply {
+            action = Intent.ACTION_SEND
+            putExtra(Intent.EXTRA_TEXT, report)
+            type = "text/plain"
+            setPackage("com.whatsapp")
+        }
+
+        try {
+            startActivity(sendIntent)
+        } catch (e: Exception) {
+            val fallbackIntent = Intent().apply {
+                action = Intent.ACTION_SEND
+                putExtra(Intent.EXTRA_TEXT, report)
+                type = "text/plain"
+            }
+            startActivity(Intent.createChooser(fallbackIntent, "Compartir reporte con..."))
+        }
     }
 
     /**
@@ -177,7 +250,7 @@ class MainActivity : AppCompatActivity() {
      */
     private fun openWebPortal() {
         try {
-            val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://yapevisualizer.onrender.com"))
+            val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://frontend-pos-gold.vercel.app/"))
             startActivity(intent)
         } catch (e: Exception) {
             Toast.makeText(this, "No se pudo abrir el navegador", Toast.LENGTH_SHORT).show()
@@ -194,7 +267,7 @@ class MainActivity : AppCompatActivity() {
      * Delega la lógica al BatteryOptimizationHelper
      */
     private fun checkBatteryOptimization() {
-        com.example.lectoryape.utils.BatteryOptimizationHelper.checkAndRequest(this)
+        com.example.kajaapp.utils.BatteryOptimizationHelper.checkAndRequest(this)
     }
 
     private fun setupBottomNavigation() {
@@ -235,11 +308,8 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun updateToolbarTitle(navId: Int) {
-        val user = authManager.getCurrentUser()
-        val firstName = user?.displayName?.split(" ")?.firstOrNull() ?: "Usuario"
-        
         val title = when (navId) {
-            R.id.nav_home     -> "HOLA, ${firstName.uppercase()}"
+            R.id.nav_home     -> "HOLA"
             R.id.nav_updates  -> "NOVEDADES"
             R.id.nav_profile  -> "MI CUENTA"
             else              -> "KAJA"
@@ -250,81 +320,75 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun setupProfileScreen() {
-        // Referencias a vistas ya integradas en activity_main.xml (a través de <include>)
-
         val ivPhoto        = findViewById<android.widget.ImageView>(R.id.ivProfilePhoto)
         val tvName         = findViewById<android.widget.TextView>(R.id.tvProfileName)
         val tvEmail        = findViewById<android.widget.TextView>(R.id.tvProfileEmail)
         val tvStatus       = findViewById<android.widget.TextView>(R.id.tvProfileStatus)
         val tvRole         = findViewById<android.widget.TextView>(R.id.tvProfileRole)
-        val tvCreatedAt    = findViewById<android.widget.TextView>(R.id.tvProfileCreatedAt)
-        val tvTrialEnd     = findViewById<android.widget.TextView>(R.id.tvProfileTrialEnd)
         val btnLogout      = findViewById<com.google.android.material.button.MaterialButton>(R.id.btnProfileLogout)
 
-        val user = authManager.getCurrentUser()
-
-        if (user != null) {
-            // Datos básicos desde Firebase Auth
-            tvName.text  = user.displayName ?: "Usuario"
-            tvEmail.text = user.email ?: "—"
-
-            // Cargar foto de Google con Coil (si existe)
-            val photoUrl = user.photoUrl
-            if (photoUrl != null) {
-                ivPhoto.load(photoUrl) {
-                    crossfade(true)
-                    placeholder(R.drawable.ic_person)
-                    error(R.drawable.ic_person)
-                    transformations(CircleCropTransformation())
-                }
+        val tenantName = modePrefs.getString("tenant_name", "Negocio")
+        val userName = modePrefs.getString("user_name", "Usuario")
+        tvName.text  = "$userName - $tenantName"
+        tvEmail.text = modePrefs.getString("user_email", "—")
+        
+        val photoUrl = modePrefs.getString("user_photo_url", "")
+        if (!photoUrl.isNullOrEmpty()) {
+            ivPhoto.load(photoUrl) {
+                transformations(CircleCropTransformation())
             }
+        }
+        
+        val role = modePrefs.getString("user_role", "MEMBER")
+        val roleText = when (role) {
+            "OWNER" -> "Dueño"
+            "ADMIN" -> "Administrador"
+            else -> "Miembro"
+        }
+        tvRole.text = roleText
+        
+        // Cargar estadísticas y suscripción
+        lifecycleScope.launch {
+            try {
+                val (count, sum, _) = withContext(Dispatchers.IO) { loadLocalTransactions() }
+                val tvStatTotal = findViewById<android.widget.TextView>(R.id.tvStatTotal)
+                val tvStatToday = findViewById<android.widget.TextView>(R.id.tvStatToday)
+                
+                tvStatTotal?.text = storage.getNotificationCount().toString()
+                tvStatToday?.text = "S/ %.2f".format(java.util.Locale.getDefault(), sum)
+            } catch (e: Exception) {}
 
-            // Datos de Firestore (suscripción, rol, fechas)
-            tvStatus.text = "Cargando..."
-            com.google.firebase.firestore.FirebaseFirestore.getInstance()
-                .collection("users").document(user.uid)
-                .get()
-                .addOnSuccessListener { document ->
-                    if (document != null && document.exists()) {
-                        val subMap   = document.get("subscription") as? Map<String, Any>
-                        val status   = subMap?.get("status")   as? String ?: "expired"
-                        val planName = subMap?.get("planName") as? String ?: "Sin plan"
-                        val trialEnd = subMap?.get("trialEndDate") as? String
-                        val role     = document.getString("role") ?: "owner"
-                        val createdAt = document.getString("createdAt")
-
-                        // Badge de suscripción
-                        val statusDisplay = status.replaceFirstChar { it.uppercaseChar() }
-                        tvStatus.text = "$planName · $statusDisplay"
-                        val badgeColor = if (status == "trial" || status == "active") "#4CAF50" else "#D32F2F"
-                        tvStatus.backgroundTintList = android.content.res.ColorStateList.valueOf(
-                            android.graphics.Color.parseColor(badgeColor)
-                        )
-
-                        // Rol
-                        tvRole.text = role.replaceFirstChar { it.uppercaseChar() }
-
-                        // Fecha de registro (solo la fecha, sin la hora)
-                        tvCreatedAt.text = createdAt?.take(10) ?: "—"
-
-                        // Fecha de vencimiento de prueba
-                        tvTrialEnd.text = trialEnd?.take(10) ?: "—"
-
-                    } else {
-                        tvStatus.text = "Sin Plan"
-                        tvRole.text   = "—"
+            try {
+                val response = com.example.kajaapp.network.RetrofitClient.api.getCurrentSubscription()
+                if (response.isSuccessful) {
+                    val sub = response.body()
+                    if (sub != null) {
+                        tvStatus.text = (sub.planName ?: sub.planType).uppercase()
+                        
+                        val tvCreatedAt = findViewById<android.widget.TextView>(R.id.tvProfileCreatedAt)
+                        val tvTrialEnd = findViewById<android.widget.TextView>(R.id.tvProfileTrialEnd)
+                        
+                        val parser = java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", java.util.Locale.getDefault())
+                        val formatter = java.text.SimpleDateFormat("dd MMM yyyy", java.util.Locale.getDefault())
+                        
+                        try {
+                            val sd = parser.parse(sub.startDate.substringBefore("."))
+                            tvCreatedAt?.text = formatter.format(sd!!)
+                        } catch (e: Exception) { tvCreatedAt?.text = sub.startDate.substringBefore("T") }
+                        
+                        try {
+                            val ed = parser.parse(sub.endDate.substringBefore("."))
+                            tvTrialEnd?.text = formatter.format(ed!!)
+                        } catch (e: Exception) { tvTrialEnd?.text = sub.endDate.substringBefore("T") }
                     }
                 }
-                .addOnFailureListener {
-                    tvStatus.text = "Error al cargar"
-                }
-        } else {
-            tvStatus.text = "No autenticado"
+            } catch (e: Exception) {
+                android.util.Log.e("MainActivity", "Error obteniendo suscripción: ${e.message}")
+            }
         }
 
         // Botón Cerrar Sesión
         btnLogout.setOnClickListener {
-            // dialog.dismiss() -- Ya no es diálogo
             logout()
         }
     }
@@ -341,13 +405,23 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun performLogout() {
-        try {
-            authManager.signOut()
-            Toast.makeText(this@MainActivity, "Sesión cerrada", Toast.LENGTH_SHORT).show()
-            navigateToLogin()
-        } catch (e: Exception) {
-            android.util.Log.e("MainActivity", "Error al cerrar sesión: ${e.message}", e)
-            Toast.makeText(this@MainActivity, "Error al cerrar sesión", Toast.LENGTH_SHORT).show()
+        lifecycleScope.launch {
+            try {
+                // Apagar el servicio de notificaciones antes de cerrar sesión
+                prefs.edit()
+                    .putBoolean(YapeNotificationListenerService.PREF_SHOW_NOTIFICATION, false)
+                    .apply()
+                val stopIntent = Intent(YapeNotificationListenerService.ACTION_TOGGLE_NOTIFICATION)
+                stopIntent.setPackage(packageName)
+                sendBroadcast(stopIntent)
+
+                supabaseAuthManager.signOut()
+                Toast.makeText(this@MainActivity, "Sesión cerrada", Toast.LENGTH_SHORT).show()
+                navigateToLogin()
+            } catch (e: Exception) {
+                android.util.Log.e("MainActivity", "Error al cerrar sesión: ${e.message}", e)
+                Toast.makeText(this@MainActivity, "Error al cerrar sesión", Toast.LENGTH_SHORT).show()
+            }
         }
     }
 
@@ -363,6 +437,9 @@ class MainActivity : AppCompatActivity() {
         // Registrar el receiver para escuchar broadcasts
         val filter = IntentFilter(YapeNotificationListenerService.ACTION_NOTIFICATION_SAVED)
         registerReceiver(notificationReceiver, filter, RECEIVER_NOT_EXPORTED)
+
+        // Guardar si binding no está listo aún (coroutine de sesión no terminó)
+        if (!::binding.isInitialized) return
 
         // Verificar permiso cada vez que la app regresa al foreground
         checkNotificationPermission()
@@ -405,6 +482,72 @@ class MainActivity : AppCompatActivity() {
 
         // Botón para abrir el portal web
         binding.btnOpenWeb.setOnClickListener { openWebPortal() }
+        // Botón de simulación DEV (Oculto en Producción)
+        val btnSimulate = findViewById<android.view.View>(R.id.btnSimulateYape)
+        if (com.example.kajaapp.BuildConfig.DEBUG) {
+            btnSimulate?.isVisible = true
+            btnSimulate?.setOnClickListener {
+                simulateYapePayment()
+            }
+        } else {
+            btnSimulate?.isVisible = false
+        }
+    }
+    
+    private fun simulateYapePayment() {
+        val prefs = getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
+        val tenantId = prefs.getString("tenant_id", "")
+        if (tenantId.isNullOrEmpty() || tenantId == "null") {
+            Toast.makeText(this, "Tenant ID no configurado o inválido. Loguéate de nuevo.", Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        val dummyPayment = com.example.kajaapp.models.YapeNotificationRaw(
+            title = "Yape",
+            name = "Prueba Dev ${(100..999).random()}",
+            amount = (1..50).random().toDouble() + 0.50,
+            timestamp = System.currentTimeMillis(),
+            securityCode = (100000..999999).random().toString(),
+            notificationId = (1..1000).random(),
+            walletType = "YAPE"
+        )
+
+        // 1. Guardar localmente
+        val saved = storage.saveNotification(dummyPayment)
+        if (saved) {
+            val intent = Intent(YapeNotificationListenerService.ACTION_NOTIFICATION_SAVED)
+            intent.setPackage(packageName)
+            sendBroadcast(intent)
+        }
+
+        // 2. Enviar a Django
+        lifecycleScope.launch(Dispatchers.IO) {
+            try {
+                val payload = com.example.kajaapp.network.models.NotificationPayload(
+                    tenant = tenantId,
+                    branch = null,
+                    amount = dummyPayment.amount,
+                    sender_name = dummyPayment.name,
+                    reference_code = dummyPayment.securityCode,
+                    wallet_type = dummyPayment.walletType,
+                    raw_payload = mapOf("simulated" to true, "msg" to "Pago generado desde boton DEV")
+                )
+                val response = com.example.kajaapp.network.RetrofitClient.api.sendNotification(payload)
+                withContext(Dispatchers.Main) {
+                    if (response.isSuccessful) {
+                        Toast.makeText(this@MainActivity, "✅ Pago simulado exitoso", Toast.LENGTH_SHORT).show()
+                    } else {
+                        val errorBody = response.errorBody()?.string() ?: "Error desconocido"
+                        android.util.Log.e("MainActivity", "❌ Error servidor ${response.code()}: $errorBody")
+                        Toast.makeText(this@MainActivity, "❌ Error: $errorBody", Toast.LENGTH_LONG).show()
+                    }
+                }
+            } catch (e: Exception) {
+                withContext(Dispatchers.Main) {
+                    Toast.makeText(this@MainActivity, "❌ Error de red: ${e.message}", Toast.LENGTH_SHORT).show()
+                }
+            }
+        }
     }
     
     /**
@@ -465,6 +608,29 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    private fun setupKioskModeSwitch() {
+        val switchKiosk = findViewById<com.google.android.material.switchmaterial.SwitchMaterial>(R.id.switchKioskMode)
+        val isKioskOn = modePrefs.getBoolean("pref_kiosk_mode", false)
+        switchKiosk?.isChecked = isKioskOn
+        applyKioskMode(isKioskOn)
+
+        switchKiosk?.setOnCheckedChangeListener { _, isChecked ->
+            modePrefs.edit().putBoolean("pref_kiosk_mode", isChecked).apply()
+            applyKioskMode(isChecked)
+            
+            val msg = if (isChecked) "Modo Mostrador Activado" else "Modo Mostrador Desactivado"
+            Toast.makeText(this, msg, Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    private fun applyKioskMode(keepScreenOn: Boolean) {
+        if (keepScreenOn) {
+            window.addFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+        } else {
+            window.clearFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+        }
+    }
+
     /** Actualiza el contador de notificaciones y la suma en Soles en la UI */
     private fun updateNotificationCount() {
         lifecycleScope.launch {
@@ -472,7 +638,7 @@ class MainActivity : AppCompatActivity() {
                 // Obtener conteo y sumatoria general 
                 // Para no hacer que la app se vuelva pesada pidiendo Firebase a cada rato, 
                 // contamos los valores usando el storage local que está siempre sincronizado
-                val (count, sum) = withContext(Dispatchers.IO) { calculateLocalYapeosTotals() }
+                val (count, sum, list) = withContext(Dispatchers.IO) { loadLocalTransactions() }
 
                 val formattedSum = String.format(Locale.getDefault(), "S/ %.2f", sum)
                 val sumTextView = findViewById<android.widget.TextView>(R.id.tvTransactionSum)
@@ -483,33 +649,45 @@ class MainActivity : AppCompatActivity() {
                 sumTextView?.text = formattedSum
                 countTextView?.text = "$count Yapeos de Hoy"
                 
-                // Conteo Histórico Global en la Nube (Firebase Aggregate Query)
-                val totalCount = withContext(Dispatchers.IO) { firebaseUploader.countUserYapeos() }
-                totalCountTextView?.text = "Histórico: $totalCount Yapeos en la nube"
+                // Conteo Histórico Global
+                totalCountTextView?.text = "Histórico Nube (Modo Activo)"
+                
+                // Actualizar la lista de transacciones offline-first
+                if (::transactionAdapter.isInitialized) {
+                    val sortedList = list.sortedByDescending { it.timestamp }
+                    transactionAdapter.setTransactions(sortedList)
+                    
+                    val rvTransactions = findViewById<androidx.recyclerview.widget.RecyclerView>(R.id.rvTransactions)
+                    val tvEmptyTransactions = findViewById<android.widget.TextView>(R.id.tvEmptyTransactions)
+                    
+                    if (sortedList.isEmpty()) {
+                        rvTransactions?.visibility = android.view.View.GONE
+                        tvEmptyTransactions?.visibility = android.view.View.VISIBLE
+                    } else {
+                        rvTransactions?.visibility = android.view.View.VISIBLE
+                        tvEmptyTransactions?.visibility = android.view.View.GONE
+                    }
+                }
 
                 android.util.Log.d(
                         "MainActivity",
-                        "📊 Hero Section: Hoy -> $count ($formattedSum) | Histórico -> $totalCount"
+                        "📊 Hero Section: Hoy -> $count ($formattedSum) | Histórico -> (Nube Activa)"
                 )
             } catch (e: Exception) {
                 android.util.Log.e("MainActivity", "Error al actualizar contador: ${e.message}", e)
-                val sumTextView = findViewById<android.widget.TextView>(R.id.tvTransactionSum)
-                val countTextView = findViewById<android.widget.TextView>(R.id.tvTransactionCount)
-                val totalCountTextView = findViewById<android.widget.TextView>(R.id.tvTransactionTotalCount)
-                sumTextView?.text = "S/ 0.00"
-                countTextView?.text = "0 Yapeos de Hoy"
-                totalCountTextView?.text = "Histórico: 0 Yapeos en la nube"
             }
         }
     }
+
+
     
-    private fun calculateLocalYapeosTotals(): Pair<Int, Double> {
+    private fun loadLocalTransactions(): Triple<Int, Double, List<com.example.kajaapp.models.YapeNotificationRaw>> {
         return try {
             val fileContent = storage.getAllNotificationsAsText()
-            if (fileContent.isBlank()) return Pair(0, 0.0)
+            if (fileContent.isBlank()) return Triple(0, 0.0, emptyList())
 
             val lines = fileContent.split("\n").filter { it.isNotBlank() }
-            if (lines.size <= 1) return Pair(0, 0.0) // solo hay cabecera
+            if (lines.size <= 1) return Triple(0, 0.0, emptyList()) // solo hay cabecera
 
             // Obtener fecha de hoy para filtrar (DEBE COINCIDIR CON DateFormatter 'yyyy-MM-dd')
             val sdf = java.text.SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
@@ -517,24 +695,42 @@ class MainActivity : AppCompatActivity() {
 
             var countToday = 0
             var sumToday = 0.0
+            val transactionsToday = mutableListOf<com.example.kajaapp.models.YapeNotificationRaw>()
 
             // Omitir cabecera (lines[0])
             for (i in 1 until lines.size) {
                 // Formato CSV local: fecha,nombre,monto,codigoSeguridad
                 val parts = lines[i].split(",")
-                if (parts.size >= 3) {
-                    val fechaHoraStr = parts[0]
+                if (parts.size >= 4) {
+                    val fechaHoraStr = parts[0] // e.g. "2026-05-24 14:30:00"
                     if (fechaHoraStr.startsWith(todayStr)) {
                         countToday++
                         val amount = parts[2].toDoubleOrNull() ?: 0.0
                         sumToday += amount
+                        
+                        // Recrear objeto dummy para el adapter
+                        // Nota: el CSV no guarda el walletType, pero podemos inferirlo o dejarlo default para UI
+                        val timeFormat = java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault())
+                        val timestamp = try { timeFormat.parse(fechaHoraStr)?.time ?: 0L } catch(e:Exception){0L}
+                        
+                        transactionsToday.add(
+                            com.example.kajaapp.models.YapeNotificationRaw(
+                                title = "Yape",
+                                name = parts[1].replace("\"", ""),
+                                amount = amount,
+                                timestamp = timestamp,
+                                securityCode = parts[3].replace("\"", ""),
+                                notificationId = i,
+                                walletType = "YAPE" // Default (podría guardarse en el CSV en una version futura)
+                            )
+                        )
                     }
                 }
             }
-            Pair(countToday, sumToday)
+            Triple(countToday, sumToday, transactionsToday)
         } catch (e: Exception) {
             android.util.Log.e("MainActivity", "Error procesando CSV local", e)
-            Pair(0, 0.0)
+            Triple(0, 0.0, emptyList())
         }
     }
 
@@ -617,6 +813,33 @@ class MainActivity : AppCompatActivity() {
         // Limpiar el receiver del AppUpdater para evitar memory leaks
         if (::appUpdater.isInitialized) {
             appUpdater.cleanup()
+        }
+    }
+
+    private fun sendStartupHeartbeat() {
+        lifecycleScope.launch(Dispatchers.IO) {
+            try {
+                val tenantId = modePrefs.getString("tenant_id", "") ?: ""
+                val deviceId = prefs.getString("device_id", "") ?: ""
+                if (tenantId.isBlank() || tenantId == "null" || deviceId.isBlank()) return@launch
+
+                val payload = com.example.kajaapp.network.models.HeartbeatPayload(
+                    tenantId = tenantId,
+                    deviceId = deviceId,
+                    timestamp = System.currentTimeMillis()
+                )
+                val response = com.example.kajaapp.network.RetrofitClient.api.sendHeartbeat(payload)
+                if (response.code() == 404) {
+                    // Device borrado de la BD (ej. BD limpiada) — re-registrar ahora mismo
+                    android.util.Log.w("MainActivity", "💓 Device no encontrado — re-registrando...")
+                    prefs.edit().putBoolean("is_device_registered", false).apply()
+                    setupDeviceRegistration()
+                } else {
+                    android.util.Log.d("MainActivity", "💓 Heartbeat de inicio enviado")
+                }
+            } catch (e: Exception) {
+                android.util.Log.w("MainActivity", "Heartbeat de inicio fallido: ${e.message}")
+            }
         }
     }
 

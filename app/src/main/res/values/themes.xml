@@ -1,6 +1,6 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
     <!-- Base application theme. -->
-    <style name="Base.Theme.LectorYape" parent="Theme.Material3.DayNight.NoActionBar">
+    <style name="Base.Theme.KAJAapp" parent="Theme.Material3.DayNight.NoActionBar">
         <item name="colorPrimary">@color/kaja_teal</item>
         <item name="colorOnPrimary">@color/white</item>
         <item name="colorPrimaryVariant">@color/kaja_teal_dark</item>
@@ -10,7 +10,7 @@
         <item name="android:fontFamily">sans-serif-medium</item>
     </style>
 
-    <style name="Theme.LectorYape" parent="Base.Theme.LectorYape" />
+    <style name="Theme.KAJAapp" parent="Base.Theme.KAJAapp" />
 
     <!-- Toolbar con fondo morado y texto/iconos blancos -->
     <style name="ToolbarTheme" parent="ThemeOverlay.MaterialComponents.Dark.ActionBar">

@@ -1,8 +1,8 @@
-package com.example.lectoryape.storage
+﻿package com.example.kajaapp.storage
 
 import android.content.Context
 import android.util.Log
-import com.example.lectoryape.models.YapeNotificationRaw
+import com.example.kajaapp.models.YapeNotificationRaw
 import java.io.File
 import java.io.FileWriter
 import java.io.IOException

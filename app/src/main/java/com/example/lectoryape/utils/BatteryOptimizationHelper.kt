@@ -1,4 +1,4 @@
-package com.example.lectoryape.utils
+﻿package com.example.kajaapp.utils
 
 import android.app.AlertDialog
 import android.content.ComponentName

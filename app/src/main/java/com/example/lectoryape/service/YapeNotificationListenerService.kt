@@ -1,4 +1,4 @@
-package com.example.lectoryape.service
+﻿package com.example.kajaapp.service
 
 import android.content.BroadcastReceiver
 import android.content.ComponentName
@@ -11,24 +11,21 @@ import android.os.PowerManager
 import android.service.notification.NotificationListenerService
 import android.service.notification.StatusBarNotification
 import android.util.Log
-import androidx.annotation.RequiresApi
-import com.example.lectoryape.firebase.FirebaseUploader
-import com.example.lectoryape.models.YapeNotificationRaw
-import com.example.lectoryape.storage.YapeNotificationStorage
-import com.example.lectoryape.utils.NotificationHelper
-import com.example.lectoryape.utils.YapeParser
+import com.example.kajaapp.network.RetrofitClient
+import com.example.kajaapp.models.YapeNotificationRaw
+import com.example.kajaapp.storage.YapeNotificationStorage
+import com.example.kajaapp.utils.NotificationHelper
+import com.example.kajaapp.utils.YapeParser
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
-import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 
 class YapeNotificationListenerService : NotificationListenerService() {
     // se usa para seguridad con posibles problemas de arranque
     private val storage by lazy { YapeNotificationStorage(applicationContext) }
-    private val firebaseUploader by lazy { FirebaseUploader(applicationContext) }
     private val notificationHelper by lazy { NotificationHelper(applicationContext) }
     
     //hash / set :V para evitar duplicados
@@ -38,15 +35,14 @@ class YapeNotificationListenerService : NotificationListenerService() {
     private val prefs: SharedPreferences by lazy {
         applicationContext.getSharedPreferences("yape_listener_prefs", Context.MODE_PRIVATE)
     }
-    
+
     // Wake lock para mantener el servicio activo
     private var wakeLock: PowerManager.WakeLock? = null
     
+    private var heartbeatJob: kotlinx.coroutines.Job? = null
+    
     // Scope con lifecycle: se cancela en onDestroy para evitar memory leaks
     private val serviceScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
-    
-    // Tarea encargada de enviar el Heartbeat a Firebase
-    private var heartbeatJob: Job? = null
     
     // BroadcastReceiver para escuchar cuando el usuario cambia el switch
     private val toggleReceiver = object : BroadcastReceiver() {
@@ -60,11 +56,9 @@ class YapeNotificationListenerService : NotificationListenerService() {
                     if (isEnabled) {
                         acquireWakeLock()
                         startForegroundService()
-                        startHeartbeat()
                     } else {
                         stopForegroundService()
                         releaseWakeLock()
-                        stopHeartbeatAndSendOffline()
                     }
                 }
             }
@@ -81,10 +75,10 @@ class YapeNotificationListenerService : NotificationListenerService() {
         private const val PLIN_PACKAGE = "pe.com.interbank.mobilebanking"
         
         // broadcast notifica a MainActivity
-        const val ACTION_NOTIFICATION_SAVED = "com.example.lectoryape.NOTIFICATION_SAVED"
+        const val ACTION_NOTIFICATION_SAVED = "com.example.kajaapp.NOTIFICATION_SAVED"
         
         // broadcast controla la notificación persistente
-        const val ACTION_TOGGLE_NOTIFICATION = "com.example.lectoryape.TOGGLE_NOTIFICATION"
+        const val ACTION_TOGGLE_NOTIFICATION = "com.example.kajaapp.TOGGLE_NOTIFICATION"
         
         // Key para SharedPreferences
         const val PREF_SHOW_NOTIFICATION = "show_persistent_notification"
@@ -165,15 +159,39 @@ class YapeNotificationListenerService : NotificationListenerService() {
             // csv
             val saved = storage.saveNotification(yapePlinPayment)
             if (saved) {
-                sendBroadcast(Intent(ACTION_NOTIFICATION_SAVED))
+                val intent = Intent(ACTION_NOTIFICATION_SAVED)
+                intent.setPackage(packageName)
+                sendBroadcast(intent)
             }
 
-            // subir a Firebase usando el scope del servicio (tiene lifecycle)
+            // Subir al backend Django (autenticado por device_id, sin JWT)
             serviceScope.launch {
                 try {
-                    firebaseUploader.uploadNotification(yapePlinPayment)
+                    val deviceId = applicationContext.getSharedPreferences("yape_listener_prefs", Context.MODE_PRIVATE)
+                        .getString("device_id", "") ?: ""
+                    if (deviceId.isBlank()) {
+                        Log.w(TAG, "deviceId no configurado — pago no enviado al backend")
+                        return@launch
+                    }
+                    val rawJson = sbn.notification.extras.getString("android.text") ?: ""
+                    val payload = com.example.kajaapp.network.models.DeviceNotificationPayload(
+                        deviceId = deviceId,
+                        amount = yapePlinPayment.amount,
+                        sender_name = yapePlinPayment.name,
+                        reference_code = yapePlinPayment.securityCode,
+                        wallet_type = yapePlinPayment.walletType,
+                        raw_payload = mapOf("text" to rawJson)
+                    )
+                    val response = RetrofitClient.api.sendNotificationFromDevice(payload)
+                    if (response.isSuccessful) {
+                        Log.i(TAG, "✅ Enviado al backend: ${yapePlinPayment.name} S/${"%.2f".format(yapePlinPayment.amount)}")
+                    } else if (response.code() == 409) {
+                        Log.d(TAG, "⚠️ Notificación duplicada ignorada (code: ${yapePlinPayment.securityCode})")
+                    } else {
+                        Log.e(TAG, "❌ Error backend ${response.code()}: ${response.errorBody()?.string()}")
+                    }
                 } catch (e: Exception) {
-                    Log.e(TAG, "Error subiendo a Firebase: ${e.message}")
+                    Log.e(TAG, "❌ Sin conexión al backend: ${e.message}")
                 }
             }
         } catch (e: Exception) {
@@ -182,7 +200,7 @@ class YapeNotificationListenerService : NotificationListenerService() {
     }
 
     private fun logYapePayment(payment: YapeNotificationRaw) {
-        val fecha = com.example.lectoryape.utils.DateFormatter.formatTimestamp(payment.timestamp)
+        val fecha = com.example.kajaapp.utils.DateFormatter.formatTimestamp(payment.timestamp)
         Log.d(TAG, """
         ═══ pago yape ═══
         Cliente: ${payment.name}
@@ -204,19 +222,11 @@ class YapeNotificationListenerService : NotificationListenerService() {
         
         // foreground service
         initializeForegroundService()
-        
-        // Empezar el heartbeat si el servicio está habilitado
-        if (isServiceEnabled()) {
-            startHeartbeat()
-        }
     }
     
     override fun onListenerDisconnected() {
         super.onListenerDisconnected()
         Log.w(TAG, " servicio de notificaciones DESCONECTADO - se intenta reconectar")
-        
-        // Detener Heartbeat e informar offline
-        stopHeartbeatAndSendOffline()
         
         // Desregistrar el receiver para evitar memory leaks
         try {
@@ -288,6 +298,7 @@ class YapeNotificationListenerService : NotificationListenerService() {
         val notification = notificationHelper.buildServiceNotification()
         startForeground(NotificationHelper.NOTIFICATION_ID, notification)
         Log.d(TAG, "foreground serv iniciado")
+        startHeartbeat()
     }
     
     // se detiene el servicio
@@ -298,6 +309,7 @@ class YapeNotificationListenerService : NotificationListenerService() {
             @Suppress("DEPRECATION")
             stopForeground(true)
         }
+        stopHeartbeat()
         Log.d(TAG, "foreground service detenido")
     }
     
@@ -308,63 +320,119 @@ class YapeNotificationListenerService : NotificationListenerService() {
         if (show) {
             startForegroundService()
             acquireWakeLock()
-            startHeartbeat()
         } else {
             stopForegroundService()
             releaseWakeLock()
-            stopHeartbeatAndSendOffline()
         }
     }
     
-    /**
-     * Inicia un ciclo que envía un "pulso" a Firebase cada 5 minutos.
-     * También renueva el wakeLock en cada ciclo para que no expire (timeout: 10min).
-     */
     private fun startHeartbeat() {
         if (heartbeatJob?.isActive == true) return
-        
         heartbeatJob = serviceScope.launch {
-            while (true) {
-                Log.d(TAG, "💓 Enviando pulso de vida (Heartbeat) a Firebase (cada 5 minutos)...")
-                // Renovar wakeLock en cada ciclo (nuestro timeout es 10min, el ciclo es 5min)
+            // Envío inmediato al arrancar — el backend sabe que el dispositivo está online
+            sendHeartbeatNow()
+            while (isActive) {
+                // Esperar 4 minutos antes del siguiente latido
+                kotlinx.coroutines.delay(4 * 60 * 1000L)
+                sendHeartbeatNow()
+                // Renovar wake lock en cada ciclo (timeout configurado en 20 min)
                 acquireWakeLock()
-                firebaseUploader.sendHeartbeat(isOnline = true)
-                delay(300_000) // Esperar 5 minutos (300,000 ms)
             }
         }
     }
-    
+
     /**
-     * Detiene el Heartbeat e informa a Firebase que el servicio se cerró
+     * Refresca el token de Supabase si está próximo a expirar o es nulo.
+     * El cliente tiene autoLoadFromStorage pero no auto-refresca en background.
+     * Decodifica el JWT manualmente (sin librerías externas) para verificar el exp.
      */
-    private fun stopHeartbeatAndSendOffline() {
-        heartbeatJob?.cancel()
-        // Usar serviceScope para que esté correctamente supervisado
-        serviceScope.launch {
-            Log.d(TAG, "💔 Servicio detenido, avisando a Firebase (Offline)...")
-            firebaseUploader.sendHeartbeat(isOnline = false)
+    private suspend fun ensureFreshToken() {
+        try {
+            val token = com.example.kajaapp.auth.SupabaseManager.auth
+                .currentSessionOrNull()?.accessToken
+            if (token == null || isTokenExpiringSoon(token)) {
+                Log.d(TAG, "Token nulo o próximo a expirar — refrescando")
+                com.example.kajaapp.auth.SupabaseManager.auth.refreshCurrentSession()
+                Log.d(TAG, "Token refrescado correctamente")
+            }
+        } catch (e: Exception) {
+            Log.w(TAG, "Token refresh fallido: ${e.message}")
         }
+    }
+
+    /** Devuelve true si el token JWT expira en menos de 5 minutos o no se puede leer. */
+    private fun isTokenExpiringSoon(accessToken: String): Boolean {
+        return try {
+            val payload = accessToken.split(".").getOrNull(1) ?: return true
+            val decoded = String(
+                android.util.Base64.decode(
+                    payload,
+                    android.util.Base64.URL_SAFE or android.util.Base64.NO_PADDING
+                )
+            )
+            val exp = org.json.JSONObject(decoded).getLong("exp") // segundos Unix
+            val nowPlusFiveMin = System.currentTimeMillis() / 1000 + 300
+            exp < nowPlusFiveMin
+        } catch (e: Exception) {
+            true // si no se puede leer, mejor refrescar
+        }
+    }
+
+    private suspend fun sendHeartbeatNow() {
+        ensureFreshToken()
+        try {
+            val prefs = applicationContext.getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
+            val tenantId = prefs.getString("tenant_id", "") ?: ""
+            val deviceId = applicationContext.getSharedPreferences("yape_listener_prefs", Context.MODE_PRIVATE)
+                .getString("device_id", "") ?: ""
+
+            if (tenantId.isBlank() || tenantId == "null" || deviceId.isBlank()) {
+                Log.w(TAG, "Heartbeat omitido: tenantId o deviceId no configurados")
+                return
+            }
+            val payload = com.example.kajaapp.network.models.HeartbeatPayload(
+                tenantId = tenantId,
+                deviceId = deviceId,
+                timestamp = System.currentTimeMillis()
+            )
+            val hbResponse = RetrofitClient.api.sendHeartbeat(payload)
+            if (hbResponse.code() == 404) {
+                // El device no existe en la BD (ej. BD limpiada) — forzar re-registro al próximo inicio
+                applicationContext.getSharedPreferences("yape_listener_prefs", Context.MODE_PRIVATE)
+                    .edit().putBoolean("is_device_registered", false).apply()
+                Log.w(TAG, "💓 Device no encontrado en backend — se re-registrará al próximo inicio")
+            } else {
+                Log.d(TAG, "💓 Heartbeat enviado (device: $deviceId)")
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Error al enviar heartbeat: ${e.message}")
+        }
+    }
+
+    private fun stopHeartbeat() {
+        heartbeatJob?.cancel()
+        heartbeatJob = null
+        Log.d(TAG, "💓 Heartbeat detenido")
     }
     
     // wake lock para mantener el CPU activo
-    // Timeout de 10 minutos: el heartbeat lo renueva periódicamente antes que expire
+    // Timeout de 10 minutos: el heartbeat (cada 4 min) lo renueva antes que expire
     private fun acquireWakeLock() {
         try {
             if (wakeLock == null) {
                 val powerManager = getSystemService(Context.POWER_SERVICE) as PowerManager
                 wakeLock = powerManager.newWakeLock(
                     PowerManager.PARTIAL_WAKE_LOCK,
-                    "YapeLector::NotificationWakeLock"
+                    "KAJAapp::ServiceWakeLock"
                 )
                 wakeLock?.setReferenceCounted(false)
             }
-            
             if (wakeLock?.isHeld == false) {
-                wakeLock?.acquire(10 * 60 * 1000L) // 10 minutos máximo (seguridad)
-                Log.d(TAG, "wake lock adquirido (timeout: 10min)")
+                wakeLock?.acquire(10 * 60 * 1000L) // 10 minutos — renovado por heartbeat cada 4
+                Log.d(TAG, "Wake lock adquirido (timeout: 20min)")
             }
         } catch (e: Exception) {
-            Log.e(TAG, "wake lock error: ${e.message}", e)
+            Log.e(TAG, "Wake lock error: ${e.message}", e)
         }
     }
     
@@ -389,7 +457,6 @@ class YapeNotificationListenerService : NotificationListenerService() {
             // Ya estaba desregistrado (p. ej. si onListenerDisconnected lo hizo antes)
         }
         releaseWakeLock()
-        stopHeartbeatAndSendOffline()
         // Cancelar el scope del servicio: libera todos los coroutines activos
         serviceScope.cancel()
         Log.d(TAG, "🛑 Servicio destruido: recursos liberados")
